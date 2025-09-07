@@ -65,7 +65,7 @@ kotlin {
     }
 }
 
-val versionNameBase = (project.findProperty("versionNameBase") as String?) ?: "1.2.3.0"
+val versionNameBase = (project.findProperty("VERSION_NAME_BASE") as String?) ?: "1.2.3.0"
 val buildNumber = (project.findProperty("BUILD_NUMBER") as String?)
     ?: System.getenv("BUILD_NUMBER")
     ?: "0"
