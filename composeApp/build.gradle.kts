@@ -1,3 +1,4 @@
+import kotlinx.kover.features.jvm.KoverLegacyFeatures.verify
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -80,7 +81,7 @@ android {
         // CI passes -PbuildNumber; locally you can leave it empty
         val buildNumber = (project.findProperty("buildNumber") as String?)
             ?: System.getenv("BUILD_NUMBER")
-            ?: "0"
+            ?: "1"
 
         // Comes from gradle.properties first; CI/env can still override with -PbuildType or BUILD_TYPE
         val buildTypeSuffix = (project.findProperty("BUILD_TYPE") as String?)
@@ -120,6 +121,16 @@ android {
             // debug signing as usual
         }
 
+        getByName("release") {
+            isMinifyEnabled = false
+        }
+
+        maybeCreate("integration").apply {
+            initWith(getByName("debug"))
+            isDebuggable = true
+            matchingFallbacks += listOf("debug") // use debug deps if needed
+        }
+
         maybeCreate("beta")
         getByName("beta") {
             initWith(getByName("debug"))
@@ -131,10 +142,6 @@ android {
                 // No CI signing available -> keep debug keystore
                 println("Using DEBUG signing for beta (CI keystore not provided).")
             }
-        }
-
-        getByName("release") {
-            isMinifyEnabled = false
         }
     }
 
@@ -157,6 +164,7 @@ dependencies {
     debugImplementation(compose.uiTooling)
 }
 kover {
+
     reports {
         filters {
             excludes {
@@ -167,5 +175,4 @@ kover {
         }
     }
 }
-
 

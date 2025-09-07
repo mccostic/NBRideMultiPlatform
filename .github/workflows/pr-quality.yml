@@ -1,0 +1,191 @@
+name: PR Quality Gate (macOS)
+
+on:
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: pr-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------- 0) Shared environment ----------
+  _setup:
+    name: Setup (macOS)
+    runs-on: macos-latest
+    outputs:
+      JAVA_VERSION: ${{ steps.out.outputs.JAVA_VERSION }}
+    steps:
+      - name: Define outputs
+        id: out
+        run: echo "JAVA_VERSION=17" >> "$GITHUB_OUTPUT"
+
+  # ---------- 1) Ktlint ----------
+  ktlint:
+    name: Ktlint
+    runs-on: macos-latest
+    needs: _setup
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ needs._setup.outputs.JAVA_VERSION }}
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      # If you have ktlint Gradle plugin: run ktlintCheck.
+      # If not, this will fail — in that case either add the plugin
+      # or replace this with your formatting/lint task.
+      - name: Run ktlintCheck
+        run: ./gradlew ktlintCheck
+
+      - name: Upload ktlint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ktlint-reports
+          path: |
+            **/build/reports/ktlint/**
+
+  # ---------- 2) Unit tests ----------
+  unit_test:
+    name: Unit Tests
+    runs-on: macos-latest
+    needs: ktlint
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Run tests (all modules)
+        run: ./gradlew test
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: |
+            **/build/reports/tests/**
+
+  # ---------- 3) Android Lint ----------
+  android_lint:
+    name: Android Lint
+    runs-on: macos-latest
+    needs: unit_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      # Try variant-specific lint first (composeApp is your Android app module name).
+      # Fallback to root lint if the variant task doesn't exist.
+      - name: Run Android Lint
+        shell: bash
+        run: |
+          set -e
+          if ./gradlew :composeApp:tasks --all | grep -q "^lintIntegration "; then
+            ./gradlew :composeApp:lintIntegration
+          else
+            ./gradlew lint
+          fi
+
+      - name: Upload lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-lint-reports
+          path: |
+            **/build/reports/lint/**
+
+  # ---------- 4) Coverage (Kover) ----------
+  coverage:
+    name: Code Coverage (Kover)
+    runs-on: macos-latest
+    needs: unit_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      # Generates HTML + XML; add koverVerify if you want to enforce a threshold
+      - name: Generate Kover reports
+        run: |
+          ./gradlew koverXmlReport koverHtmlReport
+          # Optional: enforce threshold (configure in build.gradle)
+          # ./gradlew koverVerify
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-kover
+          path: |
+            **/build/reports/kover/**
+
+  # ---------- 5) Assemble Integration ----------
+  assemble_integration:
+    name: Assemble Integration
+    runs-on: macos-latest
+    needs: [android_lint, coverage]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      # Build the Android Integration variant (debug-signed for PRs)
+      - name: Build Integration APK
+        run: ./gradlew :composeApp:assembleIntegration
+
+      - name: Upload APK(s)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-apk
+          path: |
+            composeApp/build/outputs/apk/integration/*.apk
+            **/build/outputs/apk/integration/*.apk
+
+  # ---------- 6) Quality Gate summary (optional but nice) ----------
+  summary:
+    name: Quality Summary
+    runs-on: macos-latest
+    needs: [ktlint, unit_test, android_lint, coverage, assemble_integration]
+    steps:
+      - name: Summary
+        run: |
+          echo "✅ Ktlint, Unit Tests, Android Lint, Coverage and Integration APK build completed." >> $GITHUB_STEP_SUMMARY
+          echo "- Download artifacts from the run for reports & APK." >> $GITHUB_STEP_SUMMARY
