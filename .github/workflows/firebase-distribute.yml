@@ -2,10 +2,8 @@ name: Android Firebase Distribution
 
 on:
   push:
-    branches: [ main ]           # change to your default branch
-  workflow_dispatch:              # allow manual trigger
-  # tags:
-  #   - 'v*'                      # optionally only on tags
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   distribute:
@@ -15,7 +13,6 @@ jobs:
       JAVA_VERSION: '17'
       ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
       GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g"
-      # Optional: drive release notes via CI context
       GIT_SHA: ${{ github.sha }}
 
     steps:
@@ -31,39 +28,45 @@ jobs:
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      # --- Firebase Service Account JSON (from GitHub secret) ---
+      # --- Firebase Service Account JSON (from secret) ---
       - name: Write Firebase service account file
         run: |
-          mkdir -p $GITHUB_WORKSPACE/ci
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" > $GITHUB_WORKSPACE/ci/firebase-sa.json
-        shell: bash
+          mkdir -p "$GITHUB_WORKSPACE/ci"
+          cat > "$GITHUB_WORKSPACE/ci/firebase-sa.json" << 'JSON'
+          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          JSON
 
       - name: Export GOOGLE_APPLICATION_CREDENTIALS
         run: echo "GOOGLE_APPLICATION_CREDENTIALS=$GITHUB_WORKSPACE/ci/firebase-sa.json" >> $GITHUB_ENV
 
-      # --- Android signing (optional; skip if using debug keystore) ---
+      # --- Android signing (from secrets, optional if using debug) ---
       - name: Prepare Android signing
-        if: env.ANDROID_KEYSTORE_PASSWORD != ''
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
         env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          mkdir -p $GITHUB_WORKSPACE/ci
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > $GITHUB_WORKSPACE/ci/keystore.jks
+          mkdir -p "$GITHUB_WORKSPACE/ci"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$GITHUB_WORKSPACE/ci/ci-keystore.jks"
 
-      # --- Assemble the Beta APK/AAB ---
+      # Export signing passwords for Gradle to read via System.getenv
+      - name: Export signing env
+        if: ${{ secrets.ANDROID_KEYSTORE_PASSWORD != '' }}
+        run: |
+          echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+          echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> $GITHUB_ENV
+          echo "ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
+
+      # --- Build Beta ---
       - name: Build Beta
         run: ./gradlew :composeApp:assembleBeta
 
       # --- Upload to Firebase App Distribution ---
       - name: Distribute to Firebase (Beta)
         env:
-          FIREBASE_APP_ID: ${{ secrets.FIREBASE_ANDROID_APP_ID }}   # 1:1234567890:android:abc...
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
         run: |
           ./gradlew \
-            -PfirebaseAppDistribution.appId=$FIREBASE_APP_ID \
-            -PfirebaseAppDistribution.serviceCredentialsFile=$GITHUB_WORKSPACE/ci/firebase-sa.json \
+            -PfirebaseAppDistribution.appId="$FIREBASE_APP_ID" \
+            -PfirebaseAppDistribution.serviceCredentialsFile="$GITHUB_WORKSPACE/ci/firebase-sa.json" \
             -PfirebaseAppDistribution.releaseNotes="Build $GITHUB_RUN_NUMBER - $GIT_SHA" \
             :composeApp:appDistributionUploadBeta
