@@ -75,7 +75,7 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         val versionNameBase = (project.findProperty("VERSION_NAME_BASE") as String?)
-            ?: "1.2.3.0"
+            ?: "1.0.0.0"
 
         // CI passes -PbuildNumber; locally you can leave it empty
         val buildNumber = (project.findProperty("buildNumber") as String?)
