@@ -156,7 +156,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = state.email,
                 onValueChange = { action(LoginIntent.EmailChanged(it)) },
-                label = { Text("Email") },
+                label = { Text("Username") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
