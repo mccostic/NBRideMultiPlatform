@@ -81,13 +81,16 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
     signingConfigs {
         create("ci") {
-            // Values will be written by the workflow into the workspace
-            storeFile = file("${project.rootDir}/ci/ci-keystore.jks")
-            storePassword = "nbrideKey"
-            keyAlias = "nbrideKey"
-            keyPassword = "nbrideKey"
+            val keystorePath = project.rootDir.resolve("ci/ci-keystore.jks")
+            if (keystorePath.exists()) {
+                storeFile = keystorePath
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: ""
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: ""
+            }
         }
     }
 
