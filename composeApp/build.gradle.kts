@@ -91,7 +91,7 @@ android {
         versionCode = buildNumber.takeLast(9).toIntOrNull() ?: 1
 
         // e.g. 1.0.1.0-beta(42)
-        versionName = "$versionNameBase-$buildTypeSuffix($buildNumber)"
+        versionName = "$versionNameBase-$buildTypeSuffix"
     }
     packaging {
         resources {
