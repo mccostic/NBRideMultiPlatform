@@ -74,7 +74,7 @@ jobs:
           fi
 
       - name: Build Beta
-        run: ./gradlew :composeApp:assembleBeta --stacktrace --info
+        run: ./gradlew :composeApp:assembleBeta -PversionCode=${{ github.run_number }} -PversionName=1.0.${{ github.run_number }} --stacktrace --info
 
       - name: Distribute to Firebase (Beta)
         env:
@@ -88,5 +88,4 @@ jobs:
             -PfirebaseAppDistribution.appId="$FIREBASE_APP_ID" \
             -PfirebaseAppDistribution.serviceCredentialsFile="$GITHUB_WORKSPACE/ci/firebase-sa.json" \
             -PfirebaseAppDistribution.releaseNotes="Build $GITHUB_RUN_NUMBER - $GIT_SHA" \
-            :composeApp:appDistributionUploadBeta \
-            --stacktrace --info
+            :composeApp:appDistributionUploadBeta

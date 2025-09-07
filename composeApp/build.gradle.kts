@@ -73,8 +73,14 @@ android {
         applicationId = "org.example.project.nbride"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = (project.findProperty("versionCode") as String?)?.toInt()
+            ?: (project.findProperty("VERSION_CODE") as String?)?.toInt()
+                    ?: System.getenv("GITHUB_RUN_NUMBER")?.toInt()
+                    ?: 1
+
+        versionName = project.findProperty("versionName") as String?
+            ?: (project.findProperty("VERSION_NAME") as String?)
+                    ?: "1.0.${System.getenv("GITHUB_RUN_NUMBER") ?: "local"}"
     }
     packaging {
         resources {
