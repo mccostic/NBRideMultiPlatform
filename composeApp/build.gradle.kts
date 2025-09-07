@@ -65,13 +65,6 @@ kotlin {
     }
 }
 
-val versionNameBase = (project.findProperty("VERSION_NAME_BASE") as String?) ?: "1.2.3.0"
-val buildNumber = (project.findProperty("BUILD_NUMBER") as String?)
-    ?: System.getenv("BUILD_NUMBER")
-    ?: "0"
-val buildTypeSuffix = (project.findProperty("BUILD_TYPE") as String?)
-    ?: System.getenv("BUILD_TYPE")
-    ?: "debug"
 
 android {
     namespace = "org.example.project.nbride"
@@ -81,7 +74,23 @@ android {
         applicationId = "org.example.project.nbride"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
+        val versionNameBase = (project.findProperty("VERSION_NAME_BASE") as String?)
+            ?: "1.2.3.0"
+
+        // CI passes -PbuildNumber; locally you can leave it empty
+        val buildNumber = (project.findProperty("buildNumber") as String?)
+            ?: System.getenv("BUILD_NUMBER")
+            ?: "0"
+
+        // Comes from gradle.properties first; CI/env can still override with -PbuildType or BUILD_TYPE
+        val buildTypeSuffix = (project.findProperty("BUILD_TYPE") as String?)
+            ?: System.getenv("BUILD_TYPE")
+            ?: "debug"
+
+        // Keep versionCode within Int range
         versionCode = buildNumber.takeLast(9).toIntOrNull() ?: 1
+
+        // e.g. 1.0.1.0-beta(42)
         versionName = "$versionNameBase-$buildTypeSuffix($buildNumber)"
     }
     packaging {

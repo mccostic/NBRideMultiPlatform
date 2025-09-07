@@ -74,15 +74,11 @@ jobs:
 
       - name: Build Beta
         run: |
-          BUILD_TYPE=beta
-          VERSION_CODE=${{ github.run_number }}
-          VERSION_NAME="1.2.3.0-${BUILD_TYPE}(${VERSION_CODE})"
-          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
-          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
-          echo "Building app with versionName=$VERSION_NAME and versionCode=$VERSION_CODE"
+          BUILD_NUMBER=${{ github.run_number }}
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+          echo "Building app with buildNumber=$BUILD_NUMBER"
           ./gradlew :composeApp:assembleBeta \
-            -PversionCode=$VERSION_CODE \
-            -PversionName=$VERSION_NAME
+            -PbuildNumber=$BUILD_NUMBER
 
       - name: Distribute to Firebase (Beta)
         env:
@@ -92,7 +88,7 @@ jobs:
             echo "::error::FIREBASE_APP_ID is empty. Check the FIREBASE_ANDROID_APP_ID secret."
             exit 1
           fi
-          echo "🚀 Distributing $VERSION_NAME"
+          echo "🚀 Distributing buildNumber=$BUILD_NUMBER"
           ./gradlew \
             -PfirebaseAppDistribution.appId="$FIREBASE_APP_ID" \
             -PfirebaseAppDistribution.serviceCredentialsFile="$GITHUB_WORKSPACE/ci/firebase-sa.json" \
