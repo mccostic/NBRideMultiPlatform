@@ -82,31 +82,46 @@ android {
         }
     }
 
+    val useCiSigning = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").isPresent &&
+            providers.environmentVariable("ANDROID_KEY_ALIAS").isPresent &&
+            providers.environmentVariable("ANDROID_KEY_PASSWORD").isPresent &&
+            file("${rootDir}/ci/ci-keystore.jks").exists()
+
     signingConfigs {
-        create("ci") {
-            val keystorePath = project.rootDir.resolve("ci/ci-keystore.jks")
-            if (keystorePath.exists()) {
-                storeFile = keystorePath
-                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
-                keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: ""
-                keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: ""
+        if (useCiSigning) {
+            create("ci") {
+                storeFile = file("${rootDir}/ci/ci-keystore.jks")
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
             }
         }
     }
 
     buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
+        getByName("debug") {
+            // debug signing as usual
         }
 
         maybeCreate("beta")
         getByName("beta") {
-            signingConfig = signingConfigs.getByName("ci")
             initWith(getByName("debug"))
             isMinifyEnabled = false
             matchingFallbacks += listOf("debug")
+            if (useCiSigning) {
+                signingConfig = signingConfigs.getByName("ci")
+            } else {
+                // No CI signing available -> keep debug keystore
+                println("Using DEBUG signing for beta (CI keystore not provided).")
+            }
+        }
+
+        getByName("release") {
+            isMinifyEnabled = false
         }
     }
+
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
