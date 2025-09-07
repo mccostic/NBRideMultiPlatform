@@ -13,6 +13,7 @@ jobs:
       ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
       GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g"
       GIT_SHA: ${{ github.sha }}
+      GIT_MESSAGE: ${{ github.event.head_commit.message }}
 
     steps:
       - name: Checkout
@@ -27,7 +28,6 @@ jobs:
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      # Validate required secrets via bash (NOT in `if:`)
       - name: Check required secrets
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
@@ -65,7 +65,6 @@ jobs:
               printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/ci/ci-keystore.jks"
             fi
             ls -l "$GITHUB_WORKSPACE/ci/ci-keystore.jks"
-            # Export passwords for Gradle
             [ -n "$ANDROID_KEYSTORE_PASSWORD" ] && echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> $GITHUB_ENV
             [ -n "$ANDROID_KEY_ALIAS" ] && echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> $GITHUB_ENV
             [ -n "$ANDROID_KEY_PASSWORD" ] && echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> $GITHUB_ENV
@@ -73,12 +72,17 @@ jobs:
             echo "No keystore provided; debug signing will be used."
           fi
 
-      # Compute build number = YYMMDD + GitHub run number
-      - name: Compute build number
-        run: echo "BUILD_NUMBER=$(date -u +%y%m%d)${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
-
       - name: Build Beta
-        run: ./gradlew :composeApp:assembleBeta -PbuildNumber=$BUILD_NUMBER
+        run: |
+          BUILD_TYPE=beta
+          VERSION_CODE=${{ github.run_number }}
+          VERSION_NAME="1.2.3.0-${BUILD_TYPE}(${VERSION_CODE})"
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          echo "Building app with versionName=$VERSION_NAME and versionCode=$VERSION_CODE"
+          ./gradlew :composeApp:assembleBeta \
+            -PversionCode=$VERSION_CODE \
+            -PversionName=$VERSION_NAME
 
       - name: Distribute to Firebase (Beta)
         env:
@@ -88,8 +92,9 @@ jobs:
             echo "::error::FIREBASE_APP_ID is empty. Check the FIREBASE_ANDROID_APP_ID secret."
             exit 1
           fi
+          echo "🚀 Distributing $VERSION_NAME"
           ./gradlew \
             -PfirebaseAppDistribution.appId="$FIREBASE_APP_ID" \
             -PfirebaseAppDistribution.serviceCredentialsFile="$GITHUB_WORKSPACE/ci/firebase-sa.json" \
-            -PfirebaseAppDistribution.releaseNotes="Build $GITHUB_RUN_NUMBER - $GIT_SHA" \
+            -PfirebaseAppDistribution.releaseNotes="Commit: $GIT_MESSAGE | Build $GITHUB_RUN_NUMBER - $GIT_SHA" \
             :composeApp:appDistributionUploadBeta

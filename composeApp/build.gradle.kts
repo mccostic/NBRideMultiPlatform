@@ -65,6 +65,14 @@ kotlin {
     }
 }
 
+val versionNameBase = (project.findProperty("versionNameBase") as String?) ?: "1.2.3.0"
+val buildNumber = (project.findProperty("BUILD_NUMBER") as String?)
+    ?: System.getenv("BUILD_NUMBER")
+    ?: "0"
+val buildTypeSuffix = (project.findProperty("BUILD_TYPE") as String?)
+    ?: System.getenv("BUILD_TYPE")
+    ?: "debug"
+
 android {
     namespace = "org.example.project.nbride"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -73,13 +81,8 @@ android {
         applicationId = "org.example.project.nbride"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        val versionNameBase = (project.findProperty("versionNameBase") as String?) ?: "1.2.3.0"
-        val buildNumber = (project.findProperty("buildNumber") as String?)
-            ?: System.getenv("BUILD_NUMBER")
-            ?: "0"
-
         versionCode = buildNumber.takeLast(9).toIntOrNull() ?: 1
-        versionName = "$versionNameBase ($buildNumber)"
+        versionName = "$versionNameBase-$buildTypeSuffix($buildNumber)"
     }
     packaging {
         resources {
