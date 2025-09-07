@@ -73,30 +73,13 @@ android {
         applicationId = "org.example.project.nbride"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        // ---- Resolve build number with overrides (CLI/CI > properties > fallback) ----
-        val resolvedBuildNumber: Int = (
-                // Highest priority: -PbuildNumber=xxxxx
-                (project.findProperty("buildNumber") as String?)?.toInt()
-                // Next: gradle.properties BUILD_NUMBER
-                    ?: (project.findProperty("BUILD_NUMBER") as String?)?.toInt()
-                    // Next: env BUILD_NUMBER (e.g., set by CI)
-                    ?: System.getenv("BUILD_NUMBER")?.toInt()
-                    // Lastly: fall back to a large-ish number derived from GitHub run number (optional)
-                    ?: (System.getenv("GITHUB_RUN_NUMBER")?.toInt()?.let { 400_000 + it })
-                    // Final fallback for local
-                    ?: 1
-                ).coerceAtMost(Int.MAX_VALUE)
+        val versionNameBase = (project.findProperty("versionNameBase") as String?) ?: "1.2.3.0"
+        val buildNumber = (project.findProperty("buildNumber") as String?)
+            ?: System.getenv("BUILD_NUMBER")
+            ?: "0"
 
-        // Use your fixed semantic base from gradle.properties (or CLI/CI via -PversionNameBase)
-        val versionNameBase: String = (
-                project.findProperty("versionNameBase") as String?
-                    ?: project.findProperty("VERSION_NAME_BASE") as String?
-                    ?: "1.0.0.0"
-                )
-
-        versionCode = resolvedBuildNumber
-        // No suffix here; add per buildType below
-        versionName = "$versionNameBase($resolvedBuildNumber)"
+        versionCode = buildNumber.takeLast(9).toIntOrNull() ?: 1
+        versionName = "$versionNameBase ($buildNumber)"
     }
     packaging {
         resources {
