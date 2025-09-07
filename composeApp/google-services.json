@@ -1,0 +1,226 @@
+{
+  "project_info": {
+    "project_number": "754750021377",
+    "project_id": "all-projects-820b7",
+    "storage_bucket": "all-projects-820b7.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:754750021377:android:890edff8554388fddc0500",
+        "android_client_info": {
+          "package_name": "com.eaglepay.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "754750021377-mrkv1amtmsh4sag8jtub849raj0p26e4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-0uuQdYRAAoUNNPvLxAtwgJkGY1QKTIQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "754750021377-mrkv1amtmsh4sag8jtub849raj0p26e4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "754750021377-h85i871on96v828b1dtktqjt884ajudi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "eee.com"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:754750021377:android:e9b68fddb59e0199dc0500",
+        "android_client_info": {
+          "package_name": "com.mydeed.gooddeedshub"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "754750021377-mrkv1amtmsh4sag8jtub849raj0p26e4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-0uuQdYRAAoUNNPvLxAtwgJkGY1QKTIQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "754750021377-mrkv1amtmsh4sag8jtub849raj0p26e4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "754750021377-h85i871on96v828b1dtktqjt884ajudi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "eee.com"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:754750021377:android:8b36d57c829d8231dc0500",
+        "android_client_info": {
+          "package_name": "com.nbride.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "754750021377-mrkv1amtmsh4sag8jtub849raj0p26e4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-0uuQdYRAAoUNNPvLxAtwgJkGY1QKTIQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "754750021377-mrkv1amtmsh4sag8jtub849raj0p26e4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "754750021377-h85i871on96v828b1dtktqjt884ajudi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "eee.com"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:754750021377:android:75925e784fe6fad9dc0500",
+        "android_client_info": {
+          "package_name": "org.example.project.nbride"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "754750021377-mrkv1amtmsh4sag8jtub849raj0p26e4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-0uuQdYRAAoUNNPvLxAtwgJkGY1QKTIQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "754750021377-mrkv1amtmsh4sag8jtub849raj0p26e4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "754750021377-h85i871on96v828b1dtktqjt884ajudi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "eee.com"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:754750021377:android:133e8f23fe73e04ddc0500",
+        "android_client_info": {
+          "package_name": "org.learnkmp.project"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "754750021377-mrkv1amtmsh4sag8jtub849raj0p26e4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-0uuQdYRAAoUNNPvLxAtwgJkGY1QKTIQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "754750021377-mrkv1amtmsh4sag8jtub849raj0p26e4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "754750021377-h85i871on96v828b1dtktqjt884ajudi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "eee.com"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:754750021377:android:bfbe0b4a8c85cbc4dc0500",
+        "android_client_info": {
+          "package_name": "org.learnkmp.project.dev"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "754750021377-mrkv1amtmsh4sag8jtub849raj0p26e4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-0uuQdYRAAoUNNPvLxAtwgJkGY1QKTIQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "754750021377-mrkv1amtmsh4sag8jtub849raj0p26e4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "754750021377-h85i871on96v828b1dtktqjt884ajudi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "eee.com"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
