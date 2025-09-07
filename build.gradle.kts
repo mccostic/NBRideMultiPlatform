@@ -8,11 +8,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.androidKotlinMultiplatformLibrary) apply false
     alias(libs.plugins.kotlinxSerialization) apply false
+    alias(libs.plugins.kover) apply true
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.1" apply true
     id("com.google.gms.google-services") version "4.4.3" apply false
 }
-/*
-kover {
-    reports {
-        // optional filters to exclude Compose, DI, etc.
-    }
-}*/
