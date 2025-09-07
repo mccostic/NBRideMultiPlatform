@@ -28,27 +28,31 @@ jobs:
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      # --- Assert required secrets with step-level conditions (no shell expansion) ---
-      - name: Fail if FIREBASE_SERVICE_ACCOUNT_JSON is missing
-        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON == '' }}
+      # --- Validate required secrets (done inside the shell; no 'if:' expression) ---
+      - name: Check required secrets
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_ANDROID_APP_ID: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
         run: |
-          echo "::error::Missing secret FIREBASE_SERVICE_ACCOUNT_JSON"
-          exit 1
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::Missing secret FIREBASE_SERVICE_ACCOUNT_JSON"
+            exit 1
+          fi
+          if [ -z "$FIREBASE_ANDROID_APP_ID" ]; then
+            echo "::error::Missing secret FIREBASE_ANDROID_APP_ID"
+            exit 1
+          fi
 
-      - name: Fail if FIREBASE_ANDROID_APP_ID is missing
-        if: ${{ secrets.FIREBASE_ANDROID_APP_ID == '' }}
-        run: |
-          echo "::error::Missing secret FIREBASE_ANDROID_APP_ID"
-          exit 1
-
-      # --- Write Firebase service account JSON to a file ---
+      # --- Write Firebase service account JSON to file & export GOOGLE_APPLICATION_CREDENTIALS ---
       - name: Write Firebase service account file
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
           mkdir -p "$GITHUB_WORKSPACE/ci"
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" > "$GITHUB_WORKSPACE/ci/firebase-sa.json"
+          echo "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$GITHUB_WORKSPACE/ci/firebase-sa.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$GITHUB_WORKSPACE/ci/firebase-sa.json" >> $GITHUB_ENV
 
-      # --- Prepare Android signing (optional; falls back to debug if not set) ---
+      # --- Android signing (optional) ---
       - name: Prepare Android signing (optional)
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -78,7 +82,7 @@ jobs:
             echo "No keystore provided; using debug signing (unless Gradle enforces CI signing)."
           fi
 
-          # Export passwords ONLY if present (avoid non-zero return under -e)
+          # Export signing env vars for Gradle only if present
           if [ -n "$ANDROID_KEYSTORE_PASSWORD" ]; then
             echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> $GITHUB_ENV
           fi
@@ -89,7 +93,7 @@ jobs:
             echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> $GITHUB_ENV
           fi
 
-      # --- Build Beta (uses your 'beta' buildType) ---
+      # --- Build Beta (your 'beta' buildType) ---
       - name: Build Beta
         run: ./gradlew :composeApp:assembleBeta --stacktrace --info
 
