@@ -72,7 +72,17 @@ jobs:
             echo "No keystore provided; debug signing will be used."
           fi
 
-      - name: Build Beta
+      # NEW: Read BUILD_TYPE from gradle.properties for naming only
+      - name: Read build type from gradle.properties
+        run: |
+          if [ -f gradle.properties ]; then
+            BT=$(grep -E '^\s*BUILD_TYPE\s*=' gradle.properties | sed 's/.*=\s*//')
+          fi
+          BT=${BT:-beta}
+          echo "BUILD_TYPE=$BT" >> $GITHUB_ENV
+          echo "Using BUILD_TYPE=$BT from gradle.properties (for step titles only)."
+
+      - name: Build (${{ env.BUILD_TYPE }})
         run: |
           BUILD_NUMBER=${{ github.run_number }}
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
@@ -80,7 +90,7 @@ jobs:
           ./gradlew :composeApp:assembleBeta \
             -PbuildNumber=$BUILD_NUMBER
 
-      - name: Distribute to Firebase (Beta)
+      - name: Distribute to Firebase (${{ env.BUILD_TYPE }})
         env:
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
         run: |
