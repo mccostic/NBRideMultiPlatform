@@ -73,8 +73,12 @@ jobs:
             echo "No keystore provided; debug signing will be used."
           fi
 
+      # Compute big build number (YYMMDD) for Gradle -PbuildNumber
+      - name: Compute build number
+        run: echo "BUILD_NUMBER=$(date +%y%m%d)" >> $GITHUB_ENV
+
       - name: Build Beta
-        run: ./gradlew :composeApp:assembleBeta -PversionCode=${{ github.run_number }} -PversionName=1.0.${{ github.run_number }} --stacktrace --info
+        run: ./gradlew :composeApp:assembleBeta -PbuildNumber=$BUILD_NUMBER
 
       - name: Distribute to Firebase (Beta)
         env:

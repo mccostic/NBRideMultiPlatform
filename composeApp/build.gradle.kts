@@ -73,14 +73,30 @@ android {
         applicationId = "org.example.project.nbride"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = (project.findProperty("versionCode") as String?)?.toInt()
-            ?: (project.findProperty("VERSION_CODE") as String?)?.toInt()
-                    ?: System.getenv("GITHUB_RUN_NUMBER")?.toInt()
+        // ---- Resolve build number with overrides (CLI/CI > properties > fallback) ----
+        val resolvedBuildNumber: Int = (
+                // Highest priority: -PbuildNumber=xxxxx
+                (project.findProperty("buildNumber") as String?)?.toInt()
+                // Next: gradle.properties BUILD_NUMBER
+                    ?: (project.findProperty("BUILD_NUMBER") as String?)?.toInt()
+                    // Next: env BUILD_NUMBER (e.g., set by CI)
+                    ?: System.getenv("BUILD_NUMBER")?.toInt()
+                    // Lastly: fall back to a large-ish number derived from GitHub run number (optional)
+                    ?: (System.getenv("GITHUB_RUN_NUMBER")?.toInt()?.let { 400_000 + it })
+                    // Final fallback for local
                     ?: 1
+                ).coerceAtMost(Int.MAX_VALUE)
 
-        versionName = project.findProperty("versionName") as String?
-            ?: (project.findProperty("VERSION_NAME") as String?)
-                    ?: "1.0.${System.getenv("GITHUB_RUN_NUMBER") ?: "local"}"
+        // Use your fixed semantic base from gradle.properties (or CLI/CI via -PversionNameBase)
+        val versionNameBase: String = (
+                project.findProperty("versionNameBase") as String?
+                    ?: project.findProperty("VERSION_NAME_BASE") as String?
+                    ?: "1.0.0.0"
+                )
+
+        versionCode = resolvedBuildNumber
+        // No suffix here; add per buildType below
+        versionName = "$versionNameBase($resolvedBuildNumber)"
     }
     packaging {
         resources {
