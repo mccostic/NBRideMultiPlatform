@@ -56,7 +56,7 @@ tasks.named("sonarqube") {
 sonar {
     properties {
         // Basics (set key/name to whatever you use in SonarQube/Cloud)
-        property("sonar.projectKey", "your_org_NBRideMultiPlatform")
+        property("sonar.projectKey", "mccostic_NBRideMultiPlatform")
         property("sonar.projectName", "NBRideMultiPlatform")
 
         // Sonar server + auth token from CI env (don’t hardcode locally)
