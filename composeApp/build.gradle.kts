@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.kover)
     alias(libs.plugins.firebaseAppDistribution)
     id("com.google.gms.google-services")
 }
@@ -162,17 +161,5 @@ tasks.matching { it.name == "appDistributionUploadBeta" }.configureEach {
 
 dependencies {
     debugImplementation(compose.uiTooling)
-}
-kover {
-
-    reports {
-        filters {
-            excludes {
-                // Example: exclude Compose-generated classes
-                annotatedBy("androidx.compose.runtime.Composable")
-                packages("com.dovoh.android_mvi.di")
-            }
-        }
-    }
 }
 
