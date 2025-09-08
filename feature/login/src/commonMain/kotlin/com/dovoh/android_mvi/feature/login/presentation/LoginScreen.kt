@@ -59,6 +59,8 @@ fun LoginScreen(
         commonEffects.collect { effect ->
             when (effect) {
                 is CommonEffect.ServerIssue -> action(LoginIntent.ShowDialog("Invalid credentials"))
+                is CommonEffect.NetworkIssue -> action(LoginIntent.ShowDialog("Network Error!"))
+                is CommonEffect.UnknownIssue -> action(LoginIntent.ShowDialog("Something went wrong! \nPlease try again!"))
                 else -> Unit
             }
         }
@@ -67,7 +69,6 @@ fun LoginScreen(
         effects.collect {
             when (it) {
                 LoginEffect.NavigateHome -> {
-                    Log.d("Nav", "Logged in!")
                     navController.navigate(Home) {
                         popUpTo(Login) { inclusive = true }
                         launchSingleTop = true

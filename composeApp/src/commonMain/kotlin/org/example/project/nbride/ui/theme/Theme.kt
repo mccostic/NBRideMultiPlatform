@@ -6,7 +6,6 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
-import com.jetbrains.kmpapp.screens.ui.theme.AppTypography
 
 private val lightScheme = lightColorScheme(
     primary = primaryLight,
@@ -253,7 +252,7 @@ fun AppTheme(
     val colorScheme = if (darkTheme) highContrastDarkColorScheme else highContrastLightColorScheme
   MaterialTheme(
     colorScheme = colorScheme,
-    typography = AppTypography,
+    typography = NBRideTypography(),
     content = content
   )
 }
