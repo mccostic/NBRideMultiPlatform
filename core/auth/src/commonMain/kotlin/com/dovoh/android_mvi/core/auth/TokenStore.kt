@@ -14,9 +14,17 @@ class InMemoryTokenStore : TokenStore {
     override suspend fun set(access: String?, refresh: String?) { a = access; r = refresh }
 }
 
-class TokenRepository(private val s: TokenStore) {
-    suspend fun access() = s.getAccess()
-    suspend fun refresh() = s.getRefresh()
-    suspend fun save(a: String?, r: String?) = s.set(a, r)
-    suspend fun clear() = s.set(null, null)
+
+interface TokenRepository {
+    suspend fun access(): String?
+    suspend fun refresh(): String?
+    suspend fun save(a: String?, r: String?)
+    suspend fun clear()
+}
+
+class TokenRepositoryImpl(private val store: TokenStore) : TokenRepository {
+    override suspend fun access() = store.getAccess()
+    override suspend fun refresh() = store.getRefresh()
+    override suspend fun save(a: String?, r: String?) = store.set(a, r)
+    override suspend fun clear() = store.set(null, null)
 }
