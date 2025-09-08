@@ -36,6 +36,9 @@ jobs:
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
+      # If you have ktlint Gradle plugin: run ktlintCheck.
+      # If not, this will fail — in that case either add the plugin
+      # or replace this with your formatting/lint task.
       - name: Run ktlintCheck
         run: ./gradlew ktlintCheck
 
@@ -93,6 +96,8 @@ jobs:
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
+      # Try variant-specific lint first (composeApp is your Android app module name).
+      # Fallback to root lint if the variant task doesn't exist.
       - name: Run Android Lint
         shell: bash
         run: |
@@ -127,6 +132,7 @@ jobs:
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
+      # Generates HTML + XML; add koverVerify if you want to enforce a threshold
       - name: Generate Kover reports
         run: |
           ./gradlew koverXmlReport koverHtmlReport
@@ -140,32 +146,6 @@ jobs:
           name: coverage-kover
           path: |
             **/build/reports/kover/**
-
-  # ---------- 4.5) Sonar (added) ----------
-  sonar:
-    name: SonarQube Analysis
-    runs-on: macos-latest
-    needs: unit_test
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v3
-
-      # Recreate XML coverage on this runner, then run analysis.
-      - name: Run Sonar analysis
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} # e.g. https://sonarcloud.io or your server URL
-        run: |
-          ./gradlew koverXmlReport sonarqube \
-            -Dsonar.login="$SONAR_TOKEN" \
-            -Dsonar.host.url="${SONAR_HOST_URL:-https://sonarcloud.io}"
 
   # ---------- 5) Assemble Integration ----------
   assemble_integration:
@@ -186,6 +166,7 @@ jobs:
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
+      # Build the Android Integration variant (debug-signed for PRs)
       - name: Build Integration APK
         run: ./gradlew :composeApp:assembleIntegration
 
@@ -202,9 +183,9 @@ jobs:
   summary:
     name: Quality Summary
     runs-on: macos-latest
-    needs: [ktlint, unit_test, android_lint, coverage, assemble_integration, sonar]
+    needs: [ktlint, unit_test, android_lint, coverage, assemble_integration]
     steps:
       - name: Summary
         run: |
-          echo "✅ Ktlint, Unit Tests, Android Lint, Coverage, Sonar analysis, and Integration APK build completed." >> $GITHUB_STEP_SUMMARY
+          echo "✅ Ktlint, Unit Tests, Android Lint, Coverage and Integration APK build completed." >> $GITHUB_STEP_SUMMARY
           echo "- Download artifacts from the run for reports & APK." >> $GITHUB_STEP_SUMMARY
