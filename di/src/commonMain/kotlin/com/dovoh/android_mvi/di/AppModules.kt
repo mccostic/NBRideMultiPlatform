@@ -2,6 +2,7 @@ package com.dovoh.android_mvi.di
 
 import com.dovoh.android_mvi.core.auth.InMemoryTokenStore
 import com.dovoh.android_mvi.core.auth.TokenRepository
+import com.dovoh.android_mvi.core.auth.TokenRepositoryImpl
 import com.dovoh.android_mvi.core.auth.TokenStore
 import com.dovoh.android_mvi.core.auth.model.UserDomainModel
 import com.dovoh.android_mvi.core.common.Mapper
@@ -29,7 +30,7 @@ import org.koin.dsl.module
 
 val coreModule = module {
     single<TokenStore> { InMemoryTokenStore() }
-    single { TokenRepository(get()) }
+    single<TokenRepository>{ TokenRepositoryImpl(get()) }
     single { KtorClientFactory(host =BuildKonfig.BASE_URL, tokens = get()).create() }
 }
 
