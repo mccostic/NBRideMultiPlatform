@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.update
 
 abstract class MviViewModel<I : Any, S : Any, E : Any>(
     initialState: S
@@ -53,8 +54,10 @@ abstract class MviViewModel<I : Any, S : Any, E : Any>(
 
     protected abstract suspend fun handleIntent(intent: I)
 
+
+
     protected fun setState(reducer: S.() -> S) {
-        _state.value = _state.value.reducer()
+        _state.update { it.reducer() }
     }
 
 
