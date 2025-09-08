@@ -42,15 +42,22 @@ kover {
 }
 
 // (Optional but nice): make `sonarqube` wait for tests + merged coverage
+// In ROOT build.gradle.kts
 tasks.named("sonarqube") {
-    // If you use Kover merged reports (recommended for multi-module),
-    // ensure coverage is generated before analysis:
-    dependsOn(
-        // unit tests across modules
-        "testDebugUnitTest", // or just "test" if you prefer
-        // merged coverage report
-        "koverMergedXmlReport",
-    )
+    // Depend on each subproject's generic `test` (if present)
+    subprojects.forEach { sp ->
+        sp.tasks.matching { it.name == "test" }.configureEach {
+            this@named.dependsOn(this.path)
+        }
+        // Depend on XML coverage if present (Kover per-module)
+        sp.tasks.matching { it.name == "koverXmlReport" }.configureEach {
+            this@named.dependsOn(this.path)
+        }
+    }
+    // If you do use merged reports, only add it when defined:
+    tasks.matching { it.name == "koverMergedXmlReport" }.configureEach {
+        this@named.dependsOn(this.path)
+    }
 }
 
 sonar {
