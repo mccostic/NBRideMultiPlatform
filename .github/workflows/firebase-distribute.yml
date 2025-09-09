@@ -15,6 +15,12 @@ jobs:
       GIT_SHA: ${{ github.sha }}
       GIT_MESSAGE: ${{ github.event.head_commit.message }}
 
+      # Expose signing secrets at job scope so shell & Gradle can read them
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,7 +34,7 @@ jobs:
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Check required secrets
+      - name: Check required secrets (Firebase)
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           FIREBASE_ANDROID_APP_ID: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
@@ -51,48 +57,49 @@ jobs:
           echo "GOOGLE_APPLICATION_CREDENTIALS=$GITHUB_WORKSPACE/ci/firebase-sa.json" >> $GITHUB_ENV
 
       - name: Prepare Android signing (optional)
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE4 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        shell: bash
         run: |
           set -e
           mkdir -p "$GITHUB_WORKSPACE/ci"
-          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "Decoding CI keystore"
-            if ! printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$GITHUB_WORKSPACE/ci/ci-keystore.jks"; then
-              printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/ci/ci-keystore.jks"
-            fi
-            ls -l "$GITHUB_WORKSPACE/ci/ci-keystore.jks"
-            [ -n "$ANDROID_KEYSTORE_PASSWORD" ] && echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> $GITHUB_ENV
-            [ -n "$ANDROID_KEY_ALIAS" ] && echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> $GITHUB_ENV
-            [ -n "$ANDROID_KEY_PASSWORD" ] && echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> $GITHUB_ENV
+          echo "Decoding CI keystore"
+          if printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$GITHUB_WORKSPACE/ci/ci-keystore.jks" 2>/dev/null; then
+            :
           else
-            echo "No keystore provided; debug signing will be used."
+            echo "::error::Failed to base64-decode ANDROID_KEYSTORE_BASE64. Ensure it is a single line and is the exact base64 of your .jks/.p12 file."
+            exit 1
           fi
+          ls -l "$GITHUB_WORKSPACE/ci/ci-keystore.jks"
 
-      # NEW: Read BUILD_TYPE from gradle.properties for naming only
+          # Export only if present
+          [ -n "$ANDROID_KEYSTORE_PASSWORD" ] && echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          [ -n "$ANDROID_KEY_ALIAS" ] && echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+          [ -n "$ANDROID_KEY_PASSWORD" ] && echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+
       - name: Read build type from gradle.properties
+        shell: bash
         run: |
           if [ -f gradle.properties ]; then
             BT=$(grep -E '^\s*BUILD_TYPE\s*=' gradle.properties | sed 's/.*=\s*//')
           fi
           BT=${BT:-beta}
+          BT_TASK="${BT^}"   # assembleBeta / appDistributionUploadBeta
           echo "BUILD_TYPE=$BT" >> $GITHUB_ENV
-          echo "Using BUILD_TYPE=$BT from gradle.properties (for step titles only)."
+          echo "BUILD_TYPE_TASK=$BT_TASK" >> $GITHUB_ENV
+          echo "Using BUILD_TYPE=$BT (task suffix: $BT_TASK)."
 
       - name: Build (${{ env.BUILD_TYPE }})
+        shell: bash
         run: |
           BUILD_NUMBER=${{ github.run_number }}
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
           echo "Building app with buildNumber=$BUILD_NUMBER"
-          ./gradlew :composeApp:assembleBeta \
-            -PbuildNumber=$BUILD_NUMBER
+          ./gradlew :composeApp:assemble${{ env.BUILD_TYPE_TASK }} -PbuildNumber=$BUILD_NUMBER
 
       - name: Distribute to Firebase (${{ env.BUILD_TYPE }})
         env:
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
+        shell: bash
         run: |
           if [ -z "$FIREBASE_APP_ID" ]; then
             echo "::error::FIREBASE_APP_ID is empty. Check the FIREBASE_ANDROID_APP_ID secret."
@@ -103,4 +110,4 @@ jobs:
             -PfirebaseAppDistribution.appId="$FIREBASE_APP_ID" \
             -PfirebaseAppDistribution.serviceCredentialsFile="$GITHUB_WORKSPACE/ci/firebase-sa.json" \
             -PfirebaseAppDistribution.releaseNotes="Commit: $GIT_MESSAGE | Build $GITHUB_RUN_NUMBER - $GIT_SHA" \
-            :composeApp:appDistributionUploadBeta
+            :composeApp:appDistributionUpload${{ env.BUILD_TYPE_TASK }}
