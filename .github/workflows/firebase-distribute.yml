@@ -14,7 +14,8 @@ jobs:
       GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g"
       GIT_SHA: ${{ github.sha }}
       GIT_MESSAGE: ${{ github.event.head_commit.message }}
-      # (optional) surface secrets as env so Gradle can read them too
+
+      # Surface signing secrets at job scope (so Gradle and shell both see them)
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -33,7 +34,7 @@ jobs:
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Check required secrets
+      - name: Check required secrets (Firebase)
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           FIREBASE_ANDROID_APP_ID: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
@@ -75,15 +76,18 @@ jobs:
             BT=$(grep -E '^\s*BUILD_TYPE\s*=' gradle.properties | sed 's/.*=\s*//')
           fi
           BT=${BT:-beta}
+          # Capitalize first letter for Gradle task suffix (assembleBeta, appDistributionUploadBeta)
+          BT_TASK="${BT^}"
           echo "BUILD_TYPE=$BT" >> $GITHUB_ENV
-          echo "Using BUILD_TYPE=$BT."
+          echo "BUILD_TYPE_TASK=$BT_TASK" >> $GITHUB_ENV
+          echo "Using BUILD_TYPE=$BT (task suffix: $BT_TASK)."
 
       - name: Build (${{ env.BUILD_TYPE }})
         run: |
           BUILD_NUMBER=${{ github.run_number }}
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
           echo "Building app with buildNumber=$BUILD_NUMBER"
-          ./gradlew :composeApp:assemble${{ env.BUILD_TYPE^ }} -PbuildNumber=$BUILD_NUMBER
+          ./gradlew :composeApp:assemble${{ env.BUILD_TYPE_TASK }} -PbuildNumber=$BUILD_NUMBER
 
       - name: Distribute to Firebase (${{ env.BUILD_TYPE }})
         env:
@@ -98,4 +102,4 @@ jobs:
             -PfirebaseAppDistribution.appId="$FIREBASE_APP_ID" \
             -PfirebaseAppDistribution.serviceCredentialsFile="$GITHUB_WORKSPACE/ci/firebase-sa.json" \
             -PfirebaseAppDistribution.releaseNotes="Commit: $GIT_MESSAGE | Build $GITHUB_RUN_NUMBER - $GIT_SHA" \
-            :composeApp:appDistributionUpload${{ env.BUILD_TYPE^ }}
+            :composeApp:appDistributionUpload${{ env.BUILD_TYPE_TASK }}
