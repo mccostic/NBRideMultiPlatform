@@ -64,9 +64,7 @@ class KmpFeatureConventionPlugin : Plugin<Project> {
                     implementation(libs.findLibrary("compose-runtime").get())
                     implementation(libs.findLibrary("compose-foundation").get())
                     implementation(libs.findLibrary("compose-material3").get())
-                    implementation(libs.findLibrary("navigation-compose").get())
-                 //   implementation(libs.findLibrary("material-icons-extended").get())
-                    // DI / coroutines
+                    implementation(libs.findLibrary("navigation-compose").get())           // DI / coroutines
                     implementation(libs.findLibrary("koin-compose-viewmodel").get())
                     implementation(libs.findLibrary("koin-core").get())
                     implementation(libs.findLibrary("coroutines-core").get())
