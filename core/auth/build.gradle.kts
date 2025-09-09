@@ -44,7 +44,11 @@ kotlin {
 
         commonTest {
             dependencies {
-                implementation(libs.kotlin.test)
+                implementation(libs.kotlin.test) // assertions @Test
+                implementation(libs.kotlin.test.annotations.common) // optional
+                implementation(libs.coroutines.test)                // runTest, TestScope, etc.
+                implementation(libs.turbine)                        // Flow testing (optional for later)
+                implementation(libs.koin.test)                      // if you test DI (optional)
             }
         }
 
