@@ -74,60 +74,71 @@ android {
         applicationId = "org.example.project.nbride"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        val versionNameBase = (project.findProperty("VERSION_NAME_BASE") as String?)
-            ?: "1.0.0.0"
 
-        // CI passes -PbuildNumber; locally you can leave it empty
+        val versionNameBase = (project.findProperty("VERSION_NAME_BASE") as String?) ?: "1.0.0.0"
+
         val buildNumber = (project.findProperty("buildNumber") as String?)
             ?: System.getenv("BUILD_NUMBER")
             ?: "1"
 
-        // Comes from gradle.properties first; CI/env can still override with -PbuildType or BUILD_TYPE
         val buildTypeSuffix = (project.findProperty("BUILD_TYPE") as String?)
             ?: System.getenv("BUILD_TYPE")
             ?: "debug"
 
-        // Keep versionCode within Int range
         versionCode = buildNumber.takeLast(9).toIntOrNull() ?: 1
-
-        // e.g. 1.0.1.0-beta(42)
         versionName = "$versionNameBase-$buildTypeSuffix"
     }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
 
-    val useCiSigning = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").isPresent &&
+    // ----- CI signing detection (updated) -----
+    val workspace = providers.environmentVariable("GITHUB_WORKSPACE").orNull
+    val ciKeystore = workspace
+        ?.let { file("$it/ci/ci-keystore.jks") }
+        ?: file("${rootDir}/ci/ci-keystore.jks") // local fallback for dry-run
+
+    val useCiSigning =
+        providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").isPresent &&
             providers.environmentVariable("ANDROID_KEY_ALIAS").isPresent &&
             providers.environmentVariable("ANDROID_KEY_PASSWORD").isPresent &&
-            file("${rootDir}/ci/ci-keystore.jks").exists()
+            ciKeystore.exists()
 
     signingConfigs {
         if (useCiSigning) {
             create("ci") {
-                storeFile = file("${rootDir}/ci/ci-keystore.jks")
-                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
-                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+                storeFile = ciKeystore
+                storePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").orNull
+                keyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").orNull
+                keyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD").orNull
+                enableV3Signing = true
+                enableV4Signing = true
             }
         }
     }
 
     buildTypes {
         getByName("debug") {
-            // debug signing as usual
+            // default debug signing
         }
 
         getByName("release") {
             isMinifyEnabled = false
+            if (useCiSigning) {
+                signingConfig = signingConfigs.getByName("ci")
+            } else {
+                // Leave unsigned in local or when CI secrets are absent
+                println("Release: CI keystore not provided -> using default/unsigned build.")
+            }
         }
 
         maybeCreate("integration").apply {
             initWith(getByName("debug"))
             isDebuggable = true
-            matchingFallbacks += listOf("debug") // use debug deps if needed
+            matchingFallbacks += listOf("debug")
         }
 
         maybeCreate("beta")
@@ -138,12 +149,10 @@ android {
             if (useCiSigning) {
                 signingConfig = signingConfigs.getByName("ci")
             } else {
-                // No CI signing available -> keep debug keystore
-                println("Using DEBUG signing for beta (CI keystore not provided).")
+                println("Beta: CI keystore not provided -> using DEBUG signing.")
             }
         }
     }
-
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
