@@ -28,6 +28,7 @@ turbine = "1.1.0"
 mockk = "1.13.12"
 buildKonfig = "0.17.1"
 firebaseAppDistribution = "5.1.1"
+sonarqube ="6.3.1.5724"
 
 
 
@@ -94,3 +95,4 @@ kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 kmpFeature = { id = "com.dovoh.convention.kmp-feature", version.ref = "kmp-feature" }
 buildKonfig = { id = "com.codingfeline.buildkonfig", version.ref = "buildKonfig" }
 firebaseAppDistribution = { id = "com.google.firebase.appdistribution", version.ref = "firebaseAppDistribution" }
+sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
