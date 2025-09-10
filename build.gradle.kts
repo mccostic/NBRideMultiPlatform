@@ -53,34 +53,68 @@ kover {
     }
 }
 
+
+
+
+
+
+
+
+
+/*sonar {
+    properties {
+        property("sonar.projectKey", "mccostic_NBRideMultiPlatform")
+        property("sonar.organization", "mccostic")
+        property("sonar.token", System.getenv("SONAR_TOKEN") ?: "")
+    }
+}*/
+
 sonar {
     properties {
-        // Basics (set key/name to whatever you use in SonarQube/Cloud)
+        // --- Identity / server ---
+        property("sonar.organization", "mccostic")
         property("sonar.projectKey", "mccostic_NBRideMultiPlatform")
         property("sonar.projectName", "NBRideMultiPlatform")
-
-        // Sonar server + auth token from CI env (don’t hardcode locally)
         property("sonar.host.url", System.getenv("SONAR_HOST_URL") ?: "https://sonarcloud.io")
-        property("sonar.login", System.getenv("SONAR_TOKEN") ?: "")
+        // Auth comes from env SONAR_TOKEN; do NOT set sonar.login here.
+        property("sonar.token", System.getenv("SONAR_TOKEN") ?: "")
 
-        // Sources & tests (covers KMP layout)
-        property("sonar.sources", ".")
+        // --- Make source/test sets disjoint (KMP layouts) ---
+        property(
+            "sonar.sources",
+            listOf(
+                "**/src/main/**",           // pure JVM/Android modules
+                "**/src/commonMain/**",
+                "**/src/androidMain/**",
+                "**/src/iosMain/**",
+            ).joinToString(",")
+        )
         property(
             "sonar.tests",
             listOf(
-                "**/src/**/test/**",
-                "**/src/**/androidTest/**",
-                "**/src/**/commonTest/**",
-            ).joinToString(","),
+                "**/src/commonTest/**"
+            ).joinToString(",")
         )
 
-        // Exclusions (build outputs, generated, etc.)
-        property("sonar.exclusions", "**/build/**, **/.gradle/**, **/*.kts")
+        // Exclude build outputs & gradle internals (safe)
+        property("sonar.exclusions", "**/build/**,**/.gradle/**,**/*.kts,**/di/**")
 
-        // Kover merged XML report path (created by :koverMergedXmlReport)
-        // property("sonar.kotlin.coverage.reportPaths", "${layout.buildDirectory}/reports/kover/merged/xml/report.xml")
+        // Coverage (Kover XML). We glob so multi-module paths are picked up.
+        property(
+            "sonar.kotlin.coverage.reportPaths",
+            fileTree(project.rootDir) {
+                include("**/build/reports/kover/**/report.xml")
+                include("**/build/reports/kover/xml/report.xml")
+            }.files.joinToString(",") { it.absolutePath }
+        )
 
-        // (Optional fallback for older analyzers)
-        property("sonar.coverage.jacoco.xmlReportPaths", "${layout.buildDirectory}/reports/kover/report.xml")
+        // If your analyzer expects JaCoCo XML key (fallback):
+        property(
+            "sonar.coverage.jacoco.xmlReportPaths",
+            fileTree(project.rootDir) {
+                include("**/build/reports/kover/**/report.xml")
+                include("**/build/reports/kover/xml/report.xml")
+            }.files.joinToString(",") { it.absolutePath }
+        )
     }
 }

@@ -111,13 +111,20 @@ jobs:
           path: |
             **/build/reports/lint/**
 
-  # ---------- 4) Coverage (Kover) ----------
-  coverage:
-    name: Code Coverage (Kover)
+  # ---------- 4) Coverage + Sonar (combined) ----------
+  coverage_sonar:
+    name: Coverage (Kover) + Sonar
     runs-on: macos-latest
     needs: unit_test
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} # optional; Gradle default is https://sonarcloud.io
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -127,11 +134,9 @@ jobs:
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Generate Kover reports
-        run: |
-          ./gradlew koverXmlReport koverHtmlReport
-          # Optional: enforce threshold
-          # ./gradlew koverVerify
+      # Generate coverage ONCE here; Sonar will reuse the XML
+      - name: Generate Kover XML + HTML
+        run: ./gradlew koverXmlReport koverHtmlReport
 
       - name: Upload coverage reports
         if: always()
@@ -141,42 +146,32 @@ jobs:
           path: |
             **/build/reports/kover/**
 
-  # ---------- 4.5) Sonar (uses Kover XML) ----------
-  sonar:
-    name: Sonar Analysis
-    runs-on: macos-latest
-    needs: coverage
-    permissions:
-      contents: read
-      pull-requests: write
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} # optional; defaults to https://sonarcloud.io in Gradle
-    steps:
-      - uses: actions/checkout@v4
+      # Run Sonar with PR context (if PR), otherwise branch analysis
+      - name: Sonar (PR)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          ./gradlew sonar \
+            -Dsonar.host.url="${SONAR_HOST_URL:-https://sonarcloud.io}" \
+            -Dsonar.organization="mccostic" \
+            -Dsonar.projectKey="mccostic_NBRideMultiPlatform" \
+            -Dsonar.pullrequest.key="${{ github.event.pull_request.number }}" \
+            -Dsonar.pullrequest.branch="${{ github.head_ref }}" \
+            -Dsonar.pullrequest.base="${{ github.base_ref }}"
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v3
-
-      # Ensure XML coverage exists (safe to re-run)
-      - name: Ensure Kover XML
-        run: ./gradlew koverXmlReport
-
-      # Run Sonar via Gradle (uses sonar{} config in build.gradle)
-      - name: Run Sonar analysis
-        run: ./gradlew sonar
+      - name: Sonar (branch)
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          ./gradlew sonar \
+            -Dsonar.host.url="${SONAR_HOST_URL:-https://sonarcloud.io}" \
+            -Dsonar.organization="mccostic" \
+            -Dsonar.projectKey="mccostic_NBRideMultiPlatform" \
+            -Dsonar.branch.name="${{ github.ref_name }}"
 
   # ---------- 5) Assemble Integration ----------
   assemble_integration:
     name: Assemble Integration
     runs-on: macos-latest
-    needs: [android_lint, coverage]
+    needs: [android_lint, coverage_sonar]
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK
@@ -207,9 +202,9 @@ jobs:
   summary:
     name: Quality Summary
     runs-on: macos-latest
-    needs: [ktlint, unit_test, android_lint, coverage, sonar, assemble_integration]
+    needs: [ktlint, unit_test, android_lint, coverage_sonar, assemble_integration]
     steps:
       - name: Summary
         run: |
-          echo "✅ Ktlint, Unit Tests, Android Lint, Coverage, Sonar and Integration APK build completed." >> $GITHUB_STEP_SUMMARY
+          echo "✅ Ktlint, Unit Tests, Android Lint, Coverage (Kover) + Sonar, and Integration APK build completed." >> $GITHUB_STEP_SUMMARY
           echo "- Download artifacts from the run for reports & APK." >> $GITHUB_STEP_SUMMARY
