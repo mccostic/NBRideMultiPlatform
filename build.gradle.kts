@@ -53,22 +53,6 @@ kover {
     }
 }
 
-
-
-
-
-
-
-
-
-/*sonar {
-    properties {
-        property("sonar.projectKey", "mccostic_NBRideMultiPlatform")
-        property("sonar.organization", "mccostic")
-        property("sonar.token", System.getenv("SONAR_TOKEN") ?: "")
-    }
-}*/
-
 sonar {
     properties {
         // --- Identity / server ---
@@ -83,17 +67,17 @@ sonar {
         property(
             "sonar.sources",
             listOf(
-                "**/src/main/**",           // pure JVM/Android modules
+                "**/src/main/**",
                 "**/src/commonMain/**",
                 "**/src/androidMain/**",
                 "**/src/iosMain/**",
-            ).joinToString(",")
+            ).joinToString(","),
         )
         property(
             "sonar.tests",
             listOf(
-                "**/src/commonTest/**"
-            ).joinToString(",")
+                "**/src/commonTest/**",
+            ).joinToString(","),
         )
 
         // Exclude build outputs & gradle internals (safe)
@@ -105,7 +89,7 @@ sonar {
             fileTree(project.rootDir) {
                 include("**/build/reports/kover/**/report.xml")
                 include("**/build/reports/kover/xml/report.xml")
-            }.files.joinToString(",") { it.absolutePath }
+            }.files.joinToString(",") { it.absolutePath },
         )
 
         // If your analyzer expects JaCoCo XML key (fallback):
@@ -114,7 +98,7 @@ sonar {
             fileTree(project.rootDir) {
                 include("**/build/reports/kover/**/report.xml")
                 include("**/build/reports/kover/xml/report.xml")
-            }.files.joinToString(",") { it.absolutePath }
+            }.files.joinToString(",") { it.absolutePath },
         )
     }
 }
