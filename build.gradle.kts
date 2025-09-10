@@ -27,6 +27,63 @@ ktlint {
     }
 }
 kover {
+    currentProject {
+        createVariant("custom") {
+            // use coverage if it's JVM module
+            add("jvm", optional = true)
+            // use coverage for debug build variant if it's Android module
+            add("debug", optional = true)
+        }
+    }
+
+    dependencies {
+        kover(project(":feature:login"))
+        kover(project(":feature:register"))
+       // kover(project(":core:auth"))
+        // all subprojects
+    }
+    reports {
+        variant("custom") {
+            filters {
+                includes {
+                    packages(
+                        "org.dovoh.android_mvi.feature.login",
+                        "org.dovoh.android_mvi.feature.register")
+                }
+            }
+        }
+    }
+}
+
+/*kover {
+    currentProject {
+        createVariant("custom") {
+            // use coverage if it's JVM module
+            add("jvm", optional = true)
+            // use coverage for debug build variant if it's Android module
+            add("debug", optional = true)
+        }
+    }
+
+    reports {
+        filters {
+            excludes {
+                annotatedBy("androidx.compose.runtime.Composable")
+               *//* packages(
+                    "org.dovoh.android_mvi.core.auth",
+                    "org.dovoh.android_mvi.core.auth",
+                    "org.dovoh.android_mvi.core.common",
+                    "org.dovoh.android_mvi.core.network",
+                    "org.dovoh.android_mvi.di",
+                    "org.dovoh.android_mvi.feature.login",
+                    "org.dovoh.android_mvi.feature.register",
+                    "org.example.project.nbride")*//*
+
+            }
+        }
+    }
+}*/
+/*kover {
     reports {
         filters {
             excludes {
@@ -39,26 +96,9 @@ kover {
             }
         }
     }
-}
+}*/
 
-// (Optional but nice): make `sonarqube` wait for tests + merged coverage
-// In ROOT build.gradle.kts
-tasks.named("sonarqube") {
-    // Depend on each subproject's generic `test` (if present)
-    subprojects.forEach { sp ->
-        sp.tasks.matching { it.name == "test" }.configureEach {
-            this@named.dependsOn(this.path)
-        }
-        // Depend on XML coverage if present (Kover per-module)
-        sp.tasks.matching { it.name == "koverXmlReport" }.configureEach {
-            this@named.dependsOn(this.path)
-        }
-    }
-    // If you do use merged reports, only add it when defined:
-    tasks.matching { it.name == "koverMergedXmlReport" }.configureEach {
-        this@named.dependsOn(this.path)
-    }
-}
+
 
 sonar {
     properties {
@@ -85,9 +125,9 @@ sonar {
         property("sonar.exclusions", "**/build/**, **/.gradle/**, **/*.kts")
 
         // Kover merged XML report path (created by :koverMergedXmlReport)
-        property("sonar.kotlin.coverage.reportPaths", "${layout.buildDirectory}/reports/kover/merged/xml/report.xml")
+        //property("sonar.kotlin.coverage.reportPaths", "${layout.buildDirectory}/reports/kover/merged/xml/report.xml")
 
         // (Optional fallback for older analyzers)
-        // property("sonar.coverage.jacoco.xmlReportPaths", "$buildDir/reports/kover/merged/xml/report.xml")
+        property("sonar.coverage.jacoco.xmlReportPaths", "${layout.buildDirectory}/reports/kover/report.xml")
     }
 }

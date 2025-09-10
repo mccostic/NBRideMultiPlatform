@@ -36,9 +36,6 @@ jobs:
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      # If you have ktlint Gradle plugin: run ktlintCheck.
-      # If not, this will fail — in that case either add the plugin
-      # or replace this with your formatting/lint task.
       - name: Run ktlintCheck
         run: ./gradlew ktlintCheck
 
@@ -96,8 +93,6 @@ jobs:
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      # Try variant-specific lint first (composeApp is your Android app module name).
-      # Fallback to root lint if the variant task doesn't exist.
       - name: Run Android Lint
         shell: bash
         run: |
@@ -132,11 +127,10 @@ jobs:
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      # Generates HTML + XML; add koverVerify if you want to enforce a threshold
       - name: Generate Kover reports
         run: |
           ./gradlew koverXmlReport koverHtmlReport
-          # Optional: enforce threshold (configure in build.gradle)
+          # Optional: enforce threshold
           # ./gradlew koverVerify
 
       - name: Upload coverage reports
@@ -146,6 +140,37 @@ jobs:
           name: coverage-kover
           path: |
             **/build/reports/kover/**
+
+  # ---------- 4.5) Sonar (uses Kover XML) ----------
+  sonar:
+    name: Sonar Analysis
+    runs-on: macos-latest
+    needs: coverage
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} # optional; defaults to https://sonarcloud.io in Gradle
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      # Ensure XML coverage exists (safe to re-run)
+      - name: Ensure Kover XML
+        run: ./gradlew koverXmlReport
+
+      # Run Sonar via Gradle (uses sonar{} config in build.gradle)
+      - name: Run Sonar analysis
+        run: ./gradlew sonar
 
   # ---------- 5) Assemble Integration ----------
   assemble_integration:
@@ -166,7 +191,6 @@ jobs:
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      # Build the Android Integration variant (debug-signed for PRs)
       - name: Build Integration APK
         run: ./gradlew :composeApp:assembleIntegration
 
@@ -179,13 +203,13 @@ jobs:
             composeApp/build/outputs/apk/integration/*.apk
             **/build/outputs/apk/integration/*.apk
 
-  # ---------- 6) Quality Gate summary (optional but nice) ----------
+  # ---------- 6) Quality Gate summary ----------
   summary:
     name: Quality Summary
     runs-on: macos-latest
-    needs: [ktlint, unit_test, android_lint, coverage, assemble_integration]
+    needs: [ktlint, unit_test, android_lint, coverage, sonar, assemble_integration]
     steps:
       - name: Summary
         run: |
-          echo "✅ Ktlint, Unit Tests, Android Lint, Coverage and Integration APK build completed." >> $GITHUB_STEP_SUMMARY
+          echo "✅ Ktlint, Unit Tests, Android Lint, Coverage, Sonar and Integration APK build completed." >> $GITHUB_STEP_SUMMARY
           echo "- Download artifacts from the run for reports & APK." >> $GITHUB_STEP_SUMMARY
