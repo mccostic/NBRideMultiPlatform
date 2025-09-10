@@ -14,13 +14,12 @@ plugins {
     alias(libs.plugins.sonarqube)
 }
 
-// 👇 Add this block at root-level (after plugins{}), not inside a subproject
 ktlint {
     version.set("1.2.1")
     android.set(true)
     outputToConsole.set(true)
-    ignoreFailures.set(false) // fail build if violations
-    enableExperimentalRules.set(true) // opt into experimental rules
+    ignoreFailures.set(false)
+    enableExperimentalRules.set(true)
     filter {
         exclude("**/generated/**")
         include("**/src/**/*.kt")
@@ -39,8 +38,6 @@ kover {
     dependencies {
         kover(project(":feature:login"))
         kover(project(":feature:register"))
-       // kover(project(":core:auth"))
-        // all subprojects
     }
     reports {
         variant("custom") {
@@ -48,57 +45,13 @@ kover {
                 includes {
                     packages(
                         "org.dovoh.android_mvi.feature.login",
-                        "org.dovoh.android_mvi.feature.register")
+                        "org.dovoh.android_mvi.feature.register",
+                    )
                 }
             }
         }
     }
 }
-
-/*kover {
-    currentProject {
-        createVariant("custom") {
-            // use coverage if it's JVM module
-            add("jvm", optional = true)
-            // use coverage for debug build variant if it's Android module
-            add("debug", optional = true)
-        }
-    }
-
-    reports {
-        filters {
-            excludes {
-                annotatedBy("androidx.compose.runtime.Composable")
-               *//* packages(
-                    "org.dovoh.android_mvi.core.auth",
-                    "org.dovoh.android_mvi.core.auth",
-                    "org.dovoh.android_mvi.core.common",
-                    "org.dovoh.android_mvi.core.network",
-                    "org.dovoh.android_mvi.di",
-                    "org.dovoh.android_mvi.feature.login",
-                    "org.dovoh.android_mvi.feature.register",
-                    "org.example.project.nbride")*//*
-
-            }
-        }
-    }
-}*/
-/*kover {
-    reports {
-        filters {
-            excludes {
-                // examples:
-                packages(
-                    "com.dovoh.android_mvi.di",
-                    "com.dovoh.android_mvi.generated",
-                )
-                annotatedBy("androidx.compose.runtime.Composable")
-            }
-        }
-    }
-}*/
-
-
 
 sonar {
     properties {
@@ -125,7 +78,7 @@ sonar {
         property("sonar.exclusions", "**/build/**, **/.gradle/**, **/*.kts")
 
         // Kover merged XML report path (created by :koverMergedXmlReport)
-        //property("sonar.kotlin.coverage.reportPaths", "${layout.buildDirectory}/reports/kover/merged/xml/report.xml")
+        // property("sonar.kotlin.coverage.reportPaths", "${layout.buildDirectory}/reports/kover/merged/xml/report.xml")
 
         // (Optional fallback for older analyzers)
         property("sonar.coverage.jacoco.xmlReportPaths", "${layout.buildDirectory}/reports/kover/report.xml")
