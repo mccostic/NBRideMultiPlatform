@@ -25,7 +25,7 @@ class RegisterViewModel(
     }
 
     override fun onBusinessError(e: BusinessException) {
-
+        // Noncompliant - method is empty
     }
 
     private suspend fun submit() {
