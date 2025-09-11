@@ -40,6 +40,11 @@ kover {
         kover(project(":feature:register"))
     }
     reports {
+        verify {
+            rule {
+                minBound(10)
+            }
+        }
         variant("custom") {
             filters {
                 includes {
