@@ -12,45 +12,48 @@ import androidx.compose.ui.unit.dp
 fun ErrorDialog(
     title: String = "Error",
     message: String,
+    showDialog: Boolean= false,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = { /* Do nothing */ },
-        confirmButton = {
-            Button(
-                shape = MaterialTheme.shapes.small,
-                onClick = onDismiss,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-            ) {
-                Text("OK")
-            }
-        },
-        title = {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = title,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-        },
-        text = {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = message,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        },
-        shape = MaterialTheme.shapes.medium
-    )
+    if(showDialog) {
+        AlertDialog(
+            onDismissRequest = { /* Do nothing */ },
+            confirmButton = {
+                Button(
+                    shape = MaterialTheme.shapes.small,
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                ) {
+                    Text("OK")
+                }
+            },
+            title = {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = title,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+            },
+            text = {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = message,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            },
+            shape = MaterialTheme.shapes.medium
+        )
+    }
 }
