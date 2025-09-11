@@ -24,6 +24,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -34,6 +36,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.dovoh.android_mvi.core.common.ErrorDialog
 import com.dovoh.android_mvi.core.logging.Log
 import com.dovoh.android_mvi.core.mvi.CommonEffect
@@ -41,6 +44,7 @@ import com.dovoh.android_mvi.core.navigation.Route.Home
 import com.dovoh.android_mvi.core.navigation.Route.Login
 import com.dovoh.android_mvi.core.navigation.Route.Register
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapNotNull
 
 @Composable
 fun LoginScreen(
@@ -48,45 +52,37 @@ fun LoginScreen(
     action:(LoginIntent)-> Unit= {},
     effects: Flow<LoginEffect>,
     commonEffects: Flow<CommonEffect>,
-    navController: NavController
+    navController: NavHostController
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val passwordFocus = remember { FocusRequester() }
 
-    // Collect effects
-    LaunchedEffect(Unit) {
-        commonEffects.collect { effect ->
-            when (effect) {
-                is CommonEffect.ServerIssue -> action(LoginIntent.ShowDialog("Invalid credentials"))
-                is CommonEffect.NetworkIssue -> action(LoginIntent.ShowDialog("Network Error!"))
-                is CommonEffect.UnknownIssue -> action(LoginIntent.ShowDialog("Something went wrong! \nPlease try again!"))
-                else -> Unit
-            }
-        }
-    }
-    LaunchedEffect(Unit) {
-        effects.collect {
-            when (it) {
-                LoginEffect.NavigateHome -> {
-                    navController.navigate(Home) {
-                        popUpTo(Login) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                }
-                LoginEffect.NavigateRegister -> {
-                    navController.navigate(Register) { launchSingleTop = true }
-                }
-            }
+    val enable by remember(state.email,state.password, state.loading) {
+        derivedStateOf {
+            !state.loading && state.email.isNotBlank() && state.password.isNotBlank()
         }
     }
 
-    if (state.showErrorDialog) {
-        ErrorDialog(
-            title = "Sorry!",
-            message = state.error ?: "Invalid credentials",
-            onDismiss = { action(LoginIntent.HideDialog) }
-        )
+    val showErrorDialog by remember(state.showErrorDialog) {
+        derivedStateOf {
+            state.error != null && !state.showErrorDialog
+        }
+    }
+
+    // Collect effects
+    LaunchedEffect(commonEffects) {
+        commonEffects.mapNotNull {
+            it.toUserMessage()
+        }.collect {
+            msg -> action(LoginIntent.ShowDialog(msg))
+        }
+    }
+
+    LaunchedEffect(effects) {
+        effects
+            .mapNotNull { it.toNavAction(navController) }
+            .collect { navigate -> navigate() }
     }
 
     val bg = MaterialTheme.colorScheme.surface // page background
@@ -108,7 +104,7 @@ fun LoginScreen(
                         action(LoginIntent.Submit)
                     },
                     shape = MaterialTheme.shapes.small,
-                    enabled = !state.loading && state.email.isNotBlank() && state.password.isNotBlank(),
+                    enabled =enable,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp)
@@ -118,9 +114,9 @@ fun LoginScreen(
                             strokeWidth = 2.dp,
                             modifier = Modifier.size(20.dp)
                         )
-                    } else {
-                        Text("Sign in")
+                        return@Button
                     }
+                    Text("Sign in")
                 }
                 TextButton(
                     onClick = { action(LoginIntent.GoToRegister) },
@@ -189,17 +185,44 @@ fun LoginScreen(
                     .focusRequester(passwordFocus)
             )
 
-            if (state.error != null && !state.showErrorDialog) {
+            if (showErrorDialog) {
                 Spacer(Modifier.height(8.dp))
                 AssistChip(
-                    onClick = { action(LoginIntent.ShowDialog(state.error)) },
-                    label = { Text(state.error) },
+                    onClick = { action(LoginIntent.ShowDialog(state.error.orEmpty())) },
+                    label = { Text(state.error.orEmpty()) },
                     colors = AssistChipDefaults.assistChipColors(
                         labelColor = MaterialTheme.colorScheme.error
                     )
                 )
             }
         }
+    }
+
+    ErrorDialog(
+        showDialog = state.showErrorDialog,
+        title = "Sorry!",
+        message = state.error ?: "Invalid credentials",
+        onDismiss = { action(LoginIntent.HideDialog) }
+    )
+}
+private fun CommonEffect.toUserMessage(): String? = when (this) {
+    is CommonEffect.ServerIssue  -> "Invalid credentials"
+    is CommonEffect.NetworkIssue -> "Network Error!"
+    is CommonEffect.UnknownIssue -> "Something went wrong! \nPlease try again!"
+    else -> null
+}
+
+private fun LoginEffect.toNavAction(
+    navController: NavHostController
+): (() -> Unit)? = when (this) {
+    LoginEffect.NavigateHome -> {
+        { navController.navigate(Home) {
+            popUpTo(Login) { inclusive = true }
+            launchSingleTop = true
+        } }
+    }
+    LoginEffect.NavigateRegister -> {
+        { navController.navigate(Register) { launchSingleTop = true } }
     }
 }
 
