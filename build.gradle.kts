@@ -100,5 +100,15 @@ sonar {
                 include("**/build/reports/kover/xml/report.xml")
             }.files.joinToString(",") { it.absolutePath },
         )
+
+        property(
+            "sonar.androidLint.reportPaths",
+            fileTree(project.rootDir) {
+                // AGP puts them under module/build/reports/lint/…
+                include("**/build/reports/lint/lint-results*.xml")
+                // Older/alternate naming
+                include("**/build/reports/lint-results*.xml")
+            }.files.joinToString(",") { it.absolutePath }
+        )
     }
 }
