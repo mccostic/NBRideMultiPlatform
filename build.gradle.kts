@@ -108,7 +108,7 @@ sonar {
                 include("**/build/reports/lint/lint-results*.xml")
                 // Older/alternate naming
                 include("**/build/reports/lint-results*.xml")
-            }.files.joinToString(",") { it.absolutePath }
+            }.files.joinToString(",") { it.absolutePath },
         )
     }
 }
