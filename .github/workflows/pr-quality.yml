@@ -143,8 +143,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       # Generate coverage ONCE here; Sonar will reuse the XML
-      - name: Generate Kover XML + HTML
-        run: ./gradlew koverXmlReport koverHtmlReport
+      - name: Generate Kover XML + HTML + Verify threshold
+        run: ./gradlew koverXmlReport koverHtmlReport koverVerify
 
       # ADDED: create lint XML on THIS runner so Sonar can import it
       - name: Generate Android Lint report (for Sonar)
