@@ -27,6 +27,8 @@ jobs:
     needs: _setup
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # ADDED
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -54,6 +56,8 @@ jobs:
     needs: ktlint
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # ADDED
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -81,6 +85,8 @@ jobs:
     needs: unit_test
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # ADDED
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -124,6 +130,8 @@ jobs:
       SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} # optional; Gradle default is https://sonarcloud.io
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # ADDED
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -137,6 +145,15 @@ jobs:
       # Generate coverage ONCE here; Sonar will reuse the XML
       - name: Generate Kover XML + HTML
         run: ./gradlew koverXmlReport koverHtmlReport
+
+      # ADDED: create lint XML on THIS runner so Sonar can import it
+      - name: Generate Android Lint report (for Sonar)
+        run: |
+          if ./gradlew :composeApp:tasks --all | grep -q "^lintIntegration "; then
+            ./gradlew :composeApp:lintIntegration
+          else
+            ./gradlew lint
+          fi
 
       - name: Upload coverage reports
         if: always()
@@ -174,6 +191,8 @@ jobs:
     needs: [android_lint, coverage_sonar]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # ADDED
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
