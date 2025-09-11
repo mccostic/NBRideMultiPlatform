@@ -18,11 +18,12 @@ class KmpFeatureConventionPlugin : Plugin<Project> {
         pluginManager.apply("com.android.library")
         pluginManager.apply("org.jetbrains.kotlin.plugin.serialization")
         pluginManager.apply("org.jetbrains.compose")
-        pluginManager.apply("org.jetbrains.kotlin.plugin.compose") // <- Compose compiler (K2+)
+        pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
+        pluginManager.apply("org.jetbrains.kotlinx.kover")
+
 
         // Version catalog
         val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
-
         // ---------------- Android config ----------------
         extensions.configure<LibraryExtension> {
             // e.g. :feature:login  -> com.dovoh.android_mvi.feature.login
@@ -99,5 +100,6 @@ class KmpFeatureConventionPlugin : Plugin<Project> {
                 }
             }
         }
+
     }
 }

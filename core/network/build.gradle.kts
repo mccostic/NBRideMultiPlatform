@@ -9,9 +9,6 @@ kotlin {
         namespace = "com.dovoh.android_mvi.core.network"
         compileSdk = 35
         minSdk = 24
-
-        withHostTestBuilder {
-        }
     }
 
     val xcfName = "core:networkKit"

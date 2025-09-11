@@ -14,80 +14,91 @@ plugins {
     alias(libs.plugins.sonarqube)
 }
 
-// 👇 Add this block at root-level (after plugins{}), not inside a subproject
 ktlint {
     version.set("1.2.1")
     android.set(true)
     outputToConsole.set(true)
-    ignoreFailures.set(false) // fail build if violations
-    enableExperimentalRules.set(true) // opt into experimental rules
+    ignoreFailures.set(false)
+    enableExperimentalRules.set(true)
     filter {
         exclude("**/generated/**")
         include("**/src/**/*.kt")
     }
 }
 kover {
+    currentProject {
+        createVariant("custom") {
+            // use coverage if it's JVM module
+            add("jvm", optional = true)
+            // use coverage for debug build variant if it's Android module
+            add("debug", optional = true)
+        }
+    }
+
+    dependencies {
+        kover(project(":feature:login"))
+        kover(project(":feature:register"))
+    }
     reports {
-        filters {
-            excludes {
-                // examples:
-                packages(
-                    "com.dovoh.android_mvi.di",
-                    "com.dovoh.android_mvi.generated",
-                )
-                annotatedBy("androidx.compose.runtime.Composable")
+        variant("custom") {
+            filters {
+                includes {
+                    packages(
+                        "org.dovoh.android_mvi.feature.login",
+                        "org.dovoh.android_mvi.feature.register",
+                    )
+                }
             }
         }
     }
 }
 
-// (Optional but nice): make `sonarqube` wait for tests + merged coverage
-// In ROOT build.gradle.kts
-tasks.named("sonarqube") {
-    // Depend on each subproject's generic `test` (if present)
-    subprojects.forEach { sp ->
-        sp.tasks.matching { it.name == "test" }.configureEach {
-            this@named.dependsOn(this.path)
-        }
-        // Depend on XML coverage if present (Kover per-module)
-        sp.tasks.matching { it.name == "koverXmlReport" }.configureEach {
-            this@named.dependsOn(this.path)
-        }
-    }
-    // If you do use merged reports, only add it when defined:
-    tasks.matching { it.name == "koverMergedXmlReport" }.configureEach {
-        this@named.dependsOn(this.path)
-    }
-}
-
 sonar {
     properties {
-        // Basics (set key/name to whatever you use in SonarQube/Cloud)
+        // --- Identity / server ---
+        property("sonar.organization", "mccostic")
         property("sonar.projectKey", "mccostic_NBRideMultiPlatform")
         property("sonar.projectName", "NBRideMultiPlatform")
-
-        // Sonar server + auth token from CI env (don’t hardcode locally)
         property("sonar.host.url", System.getenv("SONAR_HOST_URL") ?: "https://sonarcloud.io")
-        property("sonar.login", System.getenv("SONAR_TOKEN") ?: "")
+        // Auth comes from env SONAR_TOKEN; do NOT set sonar.login here.
+        property("sonar.token", System.getenv("SONAR_TOKEN") ?: "")
 
-        // Sources & tests (covers KMP layout)
-        property("sonar.sources", ".")
+        // --- Make source/test sets disjoint (KMP layouts) ---
+        property(
+            "sonar.sources",
+            listOf(
+                "**/src/main/**",
+                "**/src/commonMain/**",
+                "**/src/androidMain/**",
+                "**/src/iosMain/**",
+            ).joinToString(","),
+        )
         property(
             "sonar.tests",
             listOf(
-                "**/src/**/test/**",
-                "**/src/**/androidTest/**",
-                "**/src/**/commonTest/**",
+                "**/src/commonTest/**",
             ).joinToString(","),
         )
 
-        // Exclusions (build outputs, generated, etc.)
-        property("sonar.exclusions", "**/build/**, **/.gradle/**, **/*.kts")
+        // Exclude build outputs & gradle internals (safe)
+        property("sonar.exclusions", "**/build/**,**/.gradle/**,**/*.kts,**/di/**")
 
-        // Kover merged XML report path (created by :koverMergedXmlReport)
-        property("sonar.kotlin.coverage.reportPaths", "${layout.buildDirectory}/reports/kover/merged/xml/report.xml")
+        // Coverage (Kover XML). We glob so multi-module paths are picked up.
+        property(
+            "sonar.kotlin.coverage.reportPaths",
+            fileTree(project.rootDir) {
+                include("**/build/reports/kover/**/report.xml")
+                include("**/build/reports/kover/xml/report.xml")
+            }.files.joinToString(",") { it.absolutePath },
+        )
 
-        // (Optional fallback for older analyzers)
-        // property("sonar.coverage.jacoco.xmlReportPaths", "$buildDir/reports/kover/merged/xml/report.xml")
+        // If your analyzer expects JaCoCo XML key (fallback):
+        property(
+            "sonar.coverage.jacoco.xmlReportPaths",
+            fileTree(project.rootDir) {
+                include("**/build/reports/kover/**/report.xml")
+                include("**/build/reports/kover/xml/report.xml")
+            }.files.joinToString(",") { it.absolutePath },
+        )
     }
 }
