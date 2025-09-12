@@ -150,7 +150,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 file("proguard-rules.pro")
             )
-            isDebuggable = true
             matchingFallbacks += listOf("debug")
             if (canSign) {
                 signingConfig = signingConfigs.findByName("ci")
