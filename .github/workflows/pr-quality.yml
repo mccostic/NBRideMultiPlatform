@@ -28,19 +28,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # ADDED
+          fetch-depth: 0
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ needs._setup.outputs.JAVA_VERSION }}
-
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
-
       - name: Run ktlintCheck
         run: ./gradlew ktlintCheck
-
       - name: Upload ktlint reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -57,19 +54,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # ADDED
+          fetch-depth: 0
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
-
       - name: Run tests (all modules)
         run: ./gradlew test
-
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -86,19 +80,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # ADDED
+          fetch-depth: 0
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
-
       - name: Run Android Lint
         shell: bash
         run: |
@@ -108,7 +99,6 @@ jobs:
           else
             ./gradlew lint
           fi
-
       - name: Upload lint reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -127,26 +117,20 @@ jobs:
       pull-requests: write
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} # optional; Gradle default is https://sonarcloud.io
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # ADDED
-
+          fetch-depth: 0
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
-
-      # Generate coverage ONCE here; Sonar will reuse the XML
       - name: Generate Kover XML + HTML + Verify threshold
         run: ./gradlew koverXmlReport koverHtmlReport koverVerify
-
-      # ADDED: create lint XML on THIS runner so Sonar can import it
       - name: Generate Android Lint report (for Sonar)
         run: |
           if ./gradlew :composeApp:tasks --all | grep -q "^lintIntegration "; then
@@ -154,7 +138,6 @@ jobs:
           else
             ./gradlew lint
           fi
-
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -162,8 +145,6 @@ jobs:
           name: coverage-kover
           path: |
             **/build/reports/kover/**
-
-      # Run Sonar with PR context (if PR), otherwise branch analysis
       - name: Sonar (PR)
         if: ${{ github.event_name == 'pull_request' }}
         run: |
@@ -174,7 +155,6 @@ jobs:
             -Dsonar.pullrequest.key="${{ github.event.pull_request.number }}" \
             -Dsonar.pullrequest.branch="${{ github.head_ref }}" \
             -Dsonar.pullrequest.base="${{ github.base_ref }}"
-
       - name: Sonar (branch)
         if: ${{ github.event_name != 'pull_request' }}
         run: |
@@ -184,7 +164,7 @@ jobs:
             -Dsonar.projectKey="mccostic_NBRideMultiPlatform" \
             -Dsonar.branch.name="${{ github.ref_name }}"
 
-  # ---------- 5) Assemble Integration ----------
+  # ---------- 5) Assemble Integration (debug-signed) ----------
   assemble_integration:
     name: Assemble Integration
     runs-on: macos-latest
@@ -192,22 +172,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # ADDED
+          fetch-depth: 0
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
-
       - name: Build Integration APK
         run: ./gradlew :composeApp:assembleIntegration
-
       - name: Upload APK(s)
         if: always()
         uses: actions/upload-artifact@v4
@@ -217,13 +193,47 @@ jobs:
             composeApp/build/outputs/apk/integration/*.apk
             **/build/outputs/apk/integration/*.apk
 
+  # ---------- 5b) Assemble Release (R8/ProGuard on) ----------
+  assemble_release:
+    name: Assemble Release (R8) + Mapping
+    runs-on: macos-latest
+    needs: [android_lint, coverage_sonar]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+      - name: Build Release APK (R8/ProGuard)
+        run: ./gradlew :composeApp:assembleRelease
+      - name: Upload Release APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: |
+            composeApp/build/outputs/apk/release/*.apk
+      - name: Upload R8 mapping file
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapping-file
+          path: composeApp/build/outputs/mapping/release/mapping.txt
+
   # ---------- 6) Quality Gate summary ----------
   summary:
     name: Quality Summary
     runs-on: macos-latest
-    needs: [ktlint, unit_test, android_lint, coverage_sonar, assemble_integration]
+    needs: [ktlint, unit_test, android_lint, coverage_sonar, assemble_integration, assemble_release]
     steps:
       - name: Summary
         run: |
-          echo "✅ Ktlint, Unit Tests, Android Lint, Coverage (Kover) + Sonar, and Integration APK build completed." >> $GITHUB_STEP_SUMMARY
-          echo "- Download artifacts from the run for reports & APK." >> $GITHUB_STEP_SUMMARY
+          echo "✅ Ktlint, Unit Tests, Android Lint, Coverage (Kover) + Sonar, Integration APK, and Release (R8) build completed." >> $GITHUB_STEP_SUMMARY
+          echo "- Download artifacts for reports, APKs, and mapping.txt." >> $GITHUB_STEP_SUMMARY
