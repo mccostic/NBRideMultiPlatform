@@ -33,12 +33,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.dovoh.android_mvi.core.common.ErrorDialog
-import com.dovoh.android_mvi.core.logging.Log
 import com.dovoh.android_mvi.core.mvi.CommonEffect
 import com.dovoh.android_mvi.core.navigation.Route.Home
 import com.dovoh.android_mvi.core.navigation.Route.Login
@@ -171,7 +170,7 @@ fun LoginScreen(
                 label = { Text("Password") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Password),
                 keyboardActions = KeyboardActions(
                     onDone = {
                         keyboardController?.hide()

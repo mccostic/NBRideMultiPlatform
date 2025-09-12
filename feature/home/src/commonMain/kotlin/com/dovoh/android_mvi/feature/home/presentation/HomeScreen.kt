@@ -12,7 +12,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 
 @Composable
-fun HomeScreen(onLogout:() -> Unit ={}) {
+fun HomeScreen() {
     var selectedTab by remember { mutableStateOf(0) }
 
     val tabs = listOf(

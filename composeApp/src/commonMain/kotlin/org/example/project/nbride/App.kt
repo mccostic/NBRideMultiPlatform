@@ -1,7 +1,6 @@
 package org.example.project.nbride
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,21 +48,8 @@ fun AppRoot() {
             }
 
             composable<Home> {
-                HomeScreen(
-                    onLogout = {
-                        nav.navigate(Login) {
-                            popUpTo(Home) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    }
-                )
+                HomeScreen()
             }
-
-            // Example with args:
-            // composable<VerifyEmail> { backStackEntry ->
-            //     val args = backStackEntry.toRoute<VerifyEmail>()
-            //     VerifyEmailScreen(email = args.email, token = args.token)
-            // }
         }
     }
 }

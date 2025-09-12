@@ -1,6 +1,5 @@
 package com.dovoh.android_mvi.feature.login.presentation
 import com.dovoh.android_mvi.core.auth.model.UserDomainModel
-import com.dovoh.android_mvi.core.common.BusinessErrorRegistry
 import com.dovoh.android_mvi.core.common.BusinessException
 import com.dovoh.android_mvi.core.common.Mapper
 import com.dovoh.android_mvi.core.logging.Log

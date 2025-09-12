@@ -32,6 +32,6 @@ class CrashlyticsAntiLog: Antilog(){
         throwable: Throwable?,
         message: String?,
     ) {
-
+        // comment explaining why the method is empty
     }
 }
