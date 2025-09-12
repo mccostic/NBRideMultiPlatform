@@ -7,7 +7,6 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
-import org.gradle.kotlin.dsl.named
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
@@ -34,6 +33,7 @@ class KmpFeatureConventionPlugin : Plugin<Project> {
 
             defaultConfig {
                 minSdk = libs.findVersion("android-minSdk").get().requiredVersion.toInt()
+                consumerProguardFiles("consumer-rules.pro")
             }
 
             compileOptions {
@@ -100,6 +100,5 @@ class KmpFeatureConventionPlugin : Plugin<Project> {
                 }
             }
         }
-
     }
 }

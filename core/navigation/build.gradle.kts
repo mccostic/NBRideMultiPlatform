@@ -9,8 +9,6 @@ kotlin {
         namespace = "com.dovoh.android_mvi.core.navigation"
         compileSdk = 35
         minSdk = 24
-        withHostTestBuilder {
-        }
     }
     val xcfName = "core:navigationKit"
     iosX64 {
@@ -54,5 +52,4 @@ kotlin {
             }
         }
     }
-
 }
