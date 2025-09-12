@@ -1,5 +1,3 @@
-import kotlinx.kover.features.jvm.KoverLegacyFeatures.verify
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -94,8 +92,6 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-
-    // ----- CI signing detection (updated) -----
     val workspace = providers.environmentVariable("GITHUB_WORKSPACE").orNull
     val ciKeystore = workspace
         ?.let { file("$it/ci/ci-keystore.jks") }
@@ -122,29 +118,50 @@ android {
 
     buildTypes {
         getByName("debug") {
-            // default debug signing
+            isMinifyEnabled = false
         }
 
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                file("proguard-rules.pro")
+            )
             if (useCiSigning) {
                 signingConfig = signingConfigs.getByName("ci")
             } else {
-                // Leave unsigned in local or when CI secrets are absent
                 println("Release: CI keystore not provided -> using default/unsigned build.")
             }
         }
 
         maybeCreate("integration").apply {
             initWith(getByName("debug"))
+            // Harden integration builds if you share them externally
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                file("proguard-rules.pro")
+            )
             isDebuggable = true
             matchingFallbacks += listOf("debug")
+            if (useCiSigning) {
+                signingConfig = signingConfigs.findByName("ci")
+            } else {
+                println("Integration: CI keystore not provided -> using DEBUG signing.")
+            }
         }
 
         maybeCreate("beta")
         getByName("beta") {
             initWith(getByName("debug"))
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                file("proguard-rules.pro")
+            )
             matchingFallbacks += listOf("debug")
             if (useCiSigning) {
                 signingConfig = signingConfigs.getByName("ci")

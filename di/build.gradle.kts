@@ -9,9 +9,6 @@ kotlin {
         namespace = "com.dovoh.android_mvi.di"
         compileSdk = 35
         minSdk = 24
-        withHostTestBuilder {
-
-        }
     }
     val xcfName = "diKit"
 

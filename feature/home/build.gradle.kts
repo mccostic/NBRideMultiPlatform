@@ -4,21 +4,12 @@ plugins {
 
 kotlin {
     sourceSets {
-        val commonMain by getting {
-            dependencies {
+        commonMain{
 
-            }
         }
-        /*val androidMain by getting {
-            dependencies {
+        androidMain{
 
-            }
         }
-        val iosMain by getting {
-            dependencies {
-
-            }
-        }*/
     }
 }
 
