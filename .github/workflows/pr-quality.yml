@@ -164,9 +164,9 @@ jobs:
             -Dsonar.projectKey="mccostic_NBRideMultiPlatform" \
             -Dsonar.branch.name="${{ github.ref_name }}"
 
-  # ---------- 5) Assemble Integration (debug-signed) ----------
+  # ---------- 5) Assemble Integration (R8/ProGuard ON) ----------
   assemble_integration:
-    name: Assemble Integration
+    name: Assemble Integration (R8)
     runs-on: macos-latest
     needs: [android_lint, coverage_sonar]
     steps:
@@ -182,7 +182,7 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
-      - name: Build Integration APK
+      - name: Build Integration APK (minify/shrink enabled)
         run: ./gradlew :composeApp:assembleIntegration
       - name: Upload APK(s)
         if: always()
@@ -192,48 +192,21 @@ jobs:
           path: |
             composeApp/build/outputs/apk/integration/*.apk
             **/build/outputs/apk/integration/*.apk
-
-  # ---------- 5b) Assemble Release (R8/ProGuard on) ----------
-  assemble_release:
-    name: Assemble Release (R8) + Mapping
-    runs-on: macos-latest
-    needs: [android_lint, coverage_sonar]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v3
-      - name: Build Release APK (R8/ProGuard)
-        run: ./gradlew :composeApp:assembleRelease
-      - name: Upload Release APK
+      - name: Upload mapping.txt (if generated)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
-          path: |
-            composeApp/build/outputs/apk/release/*.apk
-      - name: Upload R8 mapping file
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mapping-file
-          path: composeApp/build/outputs/mapping/release/mapping.txt
+          name: integration-mapping
+          path: composeApp/build/outputs/mapping/integration/mapping.txt
+          if-no-files-found: ignore
 
   # ---------- 6) Quality Gate summary ----------
   summary:
     name: Quality Summary
     runs-on: macos-latest
-    needs: [ktlint, unit_test, android_lint, coverage_sonar, assemble_integration, assemble_release]
+    needs: [ktlint, unit_test, android_lint, coverage_sonar, assemble_integration]
     steps:
       - name: Summary
         run: |
-          echo "✅ Ktlint, Unit Tests, Android Lint, Coverage (Kover) + Sonar, Integration APK, and Release (R8) build completed." >> $GITHUB_STEP_SUMMARY
-          echo "- Download artifacts for reports, APKs, and mapping.txt." >> $GITHUB_STEP_SUMMARY
+          echo "✅ Ktlint, Unit Tests, Android Lint, Coverage (Kover) + Sonar, and Integration (R8) build completed." >> $GITHUB_STEP_SUMMARY
+          echo "- Download artifacts for reports, APKs, and mapping.txt (if present)." >> $GITHUB_STEP_SUMMARY

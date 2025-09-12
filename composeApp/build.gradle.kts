@@ -15,7 +15,7 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_17)
         }
     }
-    
+
     listOf(
         iosArm64(),
         iosSimulatorArm64()
@@ -25,7 +25,7 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     sourceSets {
         androidMain.dependencies {
             implementation(compose.preview)
@@ -63,7 +63,6 @@ kotlin {
     }
 }
 
-
 android {
     namespace = "org.example.project.nbride"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -92,29 +91,35 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-    val workspace = providers.environmentVariable("GITHUB_WORKSPACE").orNull
-    val ciKeystore = workspace
-        ?.let { file("$it/ci/ci-keystore.jks") }
-        ?: file("${rootDir}/ci/ci-keystore.jks") // local fallback for dry-run
 
-    val useCiSigning =
-        providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").isPresent &&
-            providers.environmentVariable("ANDROID_KEY_ALIAS").isPresent &&
-            providers.environmentVariable("ANDROID_KEY_PASSWORD").isPresent &&
-            ciKeystore.exists()
+    // ----------------- SIGNING (Only use repo-local keystore at ci/ci-keystore.jks) -----------------
+    // No GitHub-specific env like GITHUB_WORKSPACE is referenced here.
+    val keystoreFile = file("${rootDir}/ci/ci-keystore.jks")
+
+    // Read from environment variables first, then fall back to gradle.properties if present
+    fun envOrProp(name: String): String? =
+        providers.environmentVariable(name).orNull ?: (findProperty(name) as String?)
+
+    val storePass = envOrProp("ANDROID_KEYSTORE_PASSWORD")
+    val keyAlias  = envOrProp("ANDROID_KEY_ALIAS")
+    val keyPass   = envOrProp("ANDROID_KEY_PASSWORD")
+
+    val haveSecrets = !storePass.isNullOrBlank() && !keyAlias.isNullOrBlank() && !keyPass.isNullOrBlank()
+    val canSign = keystoreFile.exists() && haveSecrets
 
     signingConfigs {
-        if (useCiSigning) {
+        if (canSign) {
             create("ci") {
-                storeFile = ciKeystore
-                storePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").orNull
-                keyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").orNull
-                keyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD").orNull
+                storeFile = keystoreFile
+                storePassword = storePass
+                this.keyAlias = keyAlias
+                keyPassword = keyPass
                 enableV3Signing = true
                 enableV4Signing = true
             }
         }
     }
+    // -----------------------------------------------------------------------------------------------
 
     buildTypes {
         getByName("debug") {
@@ -124,14 +129,16 @@ android {
         getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 file("proguard-rules.pro")
             )
-            if (useCiSigning) {
+            if (canSign) {
                 signingConfig = signingConfigs.getByName("ci")
             } else {
-                println("Release: CI keystore not provided -> using default/unsigned build.")
+                // Keep behavior minimal; no GitHub message, just note that release will be unsigned.
+                println("Release signing not configured: using unsigned release (keystore missing or secrets not set).")
             }
         }
 
@@ -140,33 +147,29 @@ android {
             // Harden integration builds if you share them externally
             isMinifyEnabled = true
             isShrinkResources = true
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 file("proguard-rules.pro")
             )
-            isDebuggable = true
             matchingFallbacks += listOf("debug")
-            if (useCiSigning) {
+            if (canSign) {
                 signingConfig = signingConfigs.findByName("ci")
-            } else {
-                println("Integration: CI keystore not provided -> using DEBUG signing.")
             }
         }
 
-        maybeCreate("beta")
-        getByName("beta") {
+        maybeCreate("beta").apply {
             initWith(getByName("debug"))
             isMinifyEnabled = true
             isShrinkResources = true
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 file("proguard-rules.pro")
             )
             matchingFallbacks += listOf("debug")
-            if (useCiSigning) {
+            if (canSign) {
                 signingConfig = signingConfigs.getByName("ci")
-            } else {
-                println("Beta: CI keystore not provided -> using DEBUG signing.")
             }
         }
     }
@@ -176,8 +179,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 }
-firebaseAppDistribution {
 
+firebaseAppDistribution {
+    // (unchanged)
 }
 
 // Optional: per-variant tweaks (example for 'beta')
@@ -188,4 +192,3 @@ tasks.matching { it.name == "appDistributionUploadBeta" }.configureEach {
 dependencies {
     debugImplementation(compose.uiTooling)
 }
-
