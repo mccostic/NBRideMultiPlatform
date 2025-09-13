@@ -1,3 +1,4 @@
+
 plugins {
     // this is necessary to avoid the plugins to be loaded multiple times
     // in each subproject's classloader
@@ -25,6 +26,7 @@ ktlint {
         include("**/src/**/*.kt")
     }
 }
+
 kover {
     currentProject {
         createVariant("custom") {
@@ -34,22 +36,33 @@ kover {
             add("debug", optional = true)
         }
     }
-
     dependencies {
         kover(project(":feature:login"))
         kover(project(":feature:register"))
     }
     reports {
-        filters {
-            excludes {
-                annotatedBy("androidx.compose.runtime.Composable")
+        total {
+            filters {
+                projects {
+                    // include only these modules (everything else excluded)
+                    includes {
+                        listOf(
+                            ":feature:login",
+                            ":feature:register"
+                        )
+                    }
+
+                    // Or alternatively, use `excludes += listOf(":core:logging", ...)`
+                }
+                excludes {
+                    annotatedBy("androidx.compose.runtime.Composable")
+                }
+            }
+            verify {
+                rule { minBound(10) } // 10% minimum for the total (merged) coverage
             }
         }
-        verify {
-            rule {
-                minBound(10)
-            }
-        }
+
         variant("custom") {
             filters {
                 includes {
