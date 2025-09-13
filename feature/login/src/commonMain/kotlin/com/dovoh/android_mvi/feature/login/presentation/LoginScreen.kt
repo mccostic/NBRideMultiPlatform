@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.dovoh.android_mvi.core.common.ErrorDialog
 import com.dovoh.android_mvi.core.mvi.CommonEffect
@@ -51,7 +52,7 @@ fun LoginScreen(
     action:(LoginIntent)-> Unit= {},
     effects: Flow<LoginEffect>,
     commonEffects: Flow<CommonEffect>,
-    navController: NavHostController
+    navController: NavController
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -212,7 +213,7 @@ private fun CommonEffect.toUserMessage(): String? = when (this) {
 }
 
 private fun LoginEffect.toNavAction(
-    navController: NavHostController
+    navController: NavController
 ): (() -> Unit)? = when (this) {
     LoginEffect.NavigateHome -> {
         { navController.navigate(Home) {

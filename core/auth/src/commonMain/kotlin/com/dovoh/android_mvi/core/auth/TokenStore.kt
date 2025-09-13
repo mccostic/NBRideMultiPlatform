@@ -4,6 +4,7 @@ interface TokenStore {
     suspend fun getAccess(): String?
     suspend fun getRefresh(): String?
     suspend fun set(access: String?, refresh: String?)
+    fun isAuthenticated(): Boolean
 }
 
 class InMemoryTokenStore : TokenStore {
@@ -12,6 +13,9 @@ class InMemoryTokenStore : TokenStore {
     override suspend fun getAccess() = a
     override suspend fun getRefresh() = r
     override suspend fun set(access: String?, refresh: String?) { a = access; r = refresh }
+    override fun isAuthenticated(): Boolean {
+       return a?.isNotBlank() == true
+    }
 }
 
 
@@ -20,6 +24,7 @@ interface TokenRepository {
     suspend fun refresh(): String?
     suspend fun save(a: String?, r: String?)
     suspend fun clear()
+    fun isAuthenticated(): Boolean
 }
 
 class TokenRepositoryImpl(private val store: TokenStore) : TokenRepository {
@@ -27,4 +32,5 @@ class TokenRepositoryImpl(private val store: TokenStore) : TokenRepository {
     override suspend fun refresh() = store.getRefresh()
     override suspend fun save(a: String?, r: String?) = store.set(a, r)
     override suspend fun clear() = store.set(null, null)
+    override fun isAuthenticated() = store.isAuthenticated()
 }
