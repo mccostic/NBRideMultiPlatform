@@ -9,3 +9,9 @@ sealed interface Route {
     // Example with args:
     @Serializable data class ProductDetails(val id: Long) : Route
 }
+
+@Serializable
+object PublicGraph
+
+@Serializable
+object AuthedGraph

@@ -53,6 +53,7 @@ kotlin {
             implementation(project(":feature:home"))
             implementation(project(":core:common"))
             implementation(project(":core:navigation"))
+            implementation(project(":core:auth"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
