@@ -40,7 +40,7 @@ kover {
         kover(project(":feature:register"))
     }
     reports {
-        filters{
+        filters {
             excludes {
                 annotatedBy("androidx.compose.runtime.Composable")
             }
