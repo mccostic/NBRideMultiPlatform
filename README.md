@@ -1,3 +1,6 @@
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=mccostic_NBRideMultiPlatform&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=mccostic_NBRideMultiPlatform)
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=mccostic_NBRideMultiPlatform)](https://sonarcloud.io/summary/new_code?id=mccostic_NBRideMultiPlatform)
+
 This is a Kotlin Multiplatform project targeting Android, iOS.
 
 * [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
