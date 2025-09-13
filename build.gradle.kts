@@ -53,12 +53,14 @@ kover {
                         "org.dovoh.android_mvi.feature.register",
                     )
                 }
-                excludes{
-                    packages("com.dovoh.android_mvi.core.common",
+                excludes {
+                    packages(
+                        "com.dovoh.android_mvi.core.common",
                         "com.dovoh.android_mvi.core.logging",
                         "com.dovoh.android_mvi.core.mvi",
                         "com.dovoh.android_mvi.core.navigation",
-                        "com.dovoh.android_mvi.core.network")
+                        "com.dovoh.android_mvi.core.network",
+                    )
                 }
             }
         }
