@@ -29,7 +29,6 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(libs.navigation.compose)
                 implementation(libs.kotlin.stdlib)
                 implementation(libs.ktor.serialization.kotlinx.json)
                 api(libs.material.icons.extended)
