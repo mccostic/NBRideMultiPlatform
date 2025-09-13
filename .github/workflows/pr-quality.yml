@@ -163,6 +163,12 @@ jobs:
             -Dsonar.organization="mccostic" \
             -Dsonar.projectKey="mccostic_NBRideMultiPlatform" \
             -Dsonar.branch.name="${{ github.ref_name }}"
+      - name: Check Quality Gate
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectKey: mccostic_NBRideMultiPlatform
+          organization: mccostic
+          env:SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   # ---------- 5) Assemble Integration (R8/ProGuard ON) ----------
   assemble_integration:

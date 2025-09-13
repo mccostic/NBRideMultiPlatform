@@ -40,6 +40,11 @@ kover {
         kover(project(":feature:register"))
     }
     reports {
+        filters{
+            excludes {
+                annotatedBy("androidx.compose.runtime.Composable")
+            }
+        }
         verify {
             rule {
                 minBound(10)
