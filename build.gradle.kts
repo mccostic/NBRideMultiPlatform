@@ -13,6 +13,7 @@ plugins {
     id("com.google.gms.google-services") version "4.4.3" apply false
     alias(libs.plugins.sonarqube)
     alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.dependency.analysis) apply true
 }
 
 ktlint {
@@ -125,5 +126,18 @@ sonar {
                 include("**/build/reports/lint-results*.xml")
             }.files.joinToString(",") { it.absolutePath },
         )
+    }
+}
+
+dependencyAnalysis {
+    issues {
+        all {
+            onAny {
+                severity("fail")
+            }
+        }
+    }
+    reporting {
+        printBuildHealth(true)
     }
 }

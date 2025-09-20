@@ -25,7 +25,7 @@ napier = "2.7.1"
 kmp-feature = "0.1.0"
 kover = "0.9.1"
 turbine = "1.1.0"
-mockk = "1.13.12"
+dependency-analysis = "3.0.4"
 buildKonfig = "0.17.1"
 firebaseAppDistribution = "5.1.1"
 sonarqube ="6.3.1.5724"
@@ -96,3 +96,4 @@ buildKonfig = { id = "com.codingfeline.buildkonfig", version.ref = "buildKonfig"
 firebaseAppDistribution = { id = "com.google.firebase.appdistribution", version.ref = "firebaseAppDistribution" }
 sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+dependency-analysis = { id = "com.autonomousapps.dependency-analysis", version.ref = "dependency-analysis" }
