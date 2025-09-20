@@ -4,15 +4,12 @@ plugins {
 
 kotlin {
     sourceSets {
-        commonMain{
-
+        commonMain {
         }
-        androidMain{
-
+        androidMain {
         }
     }
 }
-
 
 android {
     buildFeatures.buildConfig = true
@@ -24,4 +21,3 @@ android {
         }
     }
 }
-

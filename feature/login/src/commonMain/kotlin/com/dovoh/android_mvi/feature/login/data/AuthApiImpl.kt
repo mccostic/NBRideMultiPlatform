@@ -12,8 +12,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 
-
-class AuthApiImp(private val http: HttpClient, private val base: String,private val mapper:LoginResponseToDomainMapper):AuthApi {
+class AuthApiImpl(private val http: HttpClient, private val base: String, private val mapper: LoginResponseToDomainMapper) : AuthApi {
     override suspend fun login(email: String, password: String): UserDomainModel {
         val dto: LoginResponse = http.post("$base/auth/login") {
             contentType(ContentType.Application.Json)
@@ -22,7 +21,3 @@ class AuthApiImp(private val http: HttpClient, private val base: String,private 
         return mapper.map(dto)
     }
 }
-
-
-
-

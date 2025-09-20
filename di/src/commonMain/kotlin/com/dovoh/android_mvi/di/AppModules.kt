@@ -9,7 +9,7 @@ import com.dovoh.android_mvi.core.common.Mapper
 import com.dovoh.android_mvi.core.network.KtorClientFactory
 import com.dovoh.android_mvi.core.network.auth.mapper.LoginResponseToDomainMapper
 import com.dovoh.android_mvi.di.core.BuildKonfig
-import com.dovoh.android_mvi.feature.login.data.AuthApiImp
+import com.dovoh.android_mvi.feature.login.data.AuthApiImpl
 import com.dovoh.android_mvi.feature.login.data.AuthRepositoryImpl
 import com.dovoh.android_mvi.feature.login.domain.AuthApi
 import com.dovoh.android_mvi.feature.login.domain.AuthRepository
@@ -40,7 +40,7 @@ val loginMappersModule = module {
 }
 
 val loginModule = module {
-    single<AuthApi>{ AuthApiImp(get(), base = BuildKonfig.BASE_URL,get()) }
+    single<AuthApi>{ AuthApiImpl(get(), base = BuildKonfig.BASE_URL,get()) }
     single<AuthRepository>{ AuthRepositoryImpl(get(), get()) }
     factory<LoginUseCase>{ LoginUseCaseImpl(get()) }
     factory { LoginViewModel(get(),get()) }

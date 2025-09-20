@@ -1,6 +1,5 @@
 package com.dovoh.android_mvi.feature.login.presentation
 
-import com.dovoh.android_mvi.core.auth.model.UserDomainModel
 import com.dovoh.android_mvi.core.common.AppException
 import com.dovoh.android_mvi.core.mvi.CommonEffect
 import com.dovoh.android_mvi.feature.login.di.loginTestModule
@@ -14,7 +13,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import org.koin.test.KoinTest
 import org.koin.test.inject
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -28,8 +26,6 @@ class LoginViewModelTest : BaseViewModelTest() {
 
     private val vm by inject<LoginViewModel>()
     private val fakeUseCase by injectAs<LoginUseCase, FakeLoginUseCase>()
-
-
 
     @Test
     fun `success NavigateHome effect`() = runTest {
@@ -55,7 +51,6 @@ class LoginViewModelTest : BaseViewModelTest() {
         assertFalse(s.loading)
         assertTrue(s.error?.contains("required", ignoreCase = true) == true)
     }
-
 
     @Test
     fun `HTTP 400 common effect`() = runTest {

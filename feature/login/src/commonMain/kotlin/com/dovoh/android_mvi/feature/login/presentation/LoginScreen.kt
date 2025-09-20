@@ -43,7 +43,7 @@ import kotlinx.coroutines.flow.mapNotNull
 @Composable
 fun LoginScreen(
     state: LoginState,
-    action:(LoginIntent)-> Unit= {},
+    action: (LoginIntent) -> Unit = {},
     effects: Flow<LoginEffect>,
     commonEffects: Flow<CommonEffect>,
     navController: NavController
@@ -52,7 +52,7 @@ fun LoginScreen(
     val focusManager = LocalFocusManager.current
     val passwordFocus = remember { FocusRequester() }
 
-    val enable by remember(state.email,state.password, state.loading) {
+    val enable by remember(state.email, state.password, state.loading) {
         derivedStateOf {
             !state.loading && state.email.isNotBlank() && state.password.isNotBlank()
         }
@@ -75,7 +75,7 @@ fun LoginScreen(
     }
 
     Scaffold(
-        containerColor =  MaterialTheme.colorScheme.surface ,
+        containerColor = MaterialTheme.colorScheme.surface,
         bottomBar = {
             // Sticky bottom actions
             Column(
@@ -85,7 +85,6 @@ fun LoginScreen(
                     .imePadding()
                     .padding(horizontal = 24.dp, vertical = 16.dp)
             ) {
-
                 PrimaryButton(
                     text = "Sign in",
                     onClick = {
@@ -176,20 +175,18 @@ fun LoginScreen(
     )
 }
 
-
 private fun LoginEffect.toNavAction(
     navController: NavController
 ): (() -> Unit)? = when (this) {
     LoginEffect.NavigateHome -> {
-        { navController.navigate(Home) {
-            popUpTo(Login) { inclusive = true }
-            launchSingleTop = true
-        } }
+        {
+            navController.navigate(Home) {
+                popUpTo(Login) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
     }
     LoginEffect.NavigateRegister -> {
         { navController.navigate(Register) { launchSingleTop = true } }
     }
 }
-
-
-

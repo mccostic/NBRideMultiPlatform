@@ -11,16 +11,16 @@ data class RegisterState(
 )
 
 sealed interface RegisterIntent {
-    data class NameChanged(val value: String): RegisterIntent
-    data class EmailChanged(val value: String): RegisterIntent
-    data class PasswordChanged(val value: String): RegisterIntent
-    data object Submit: RegisterIntent
-    data object Back: RegisterIntent
-    data object HideDialog:RegisterIntent
-    data class ShowDialog(val message: String?):RegisterIntent
+    data class NameChanged(val value: String) : RegisterIntent
+    data class EmailChanged(val value: String) : RegisterIntent
+    data class PasswordChanged(val value: String) : RegisterIntent
+    data object Submit : RegisterIntent
+    data object Back : RegisterIntent
+    data object HideDialog : RegisterIntent
+    data class ShowDialog(val message: String?) : RegisterIntent
 }
 
 sealed interface RegisterEffect {
-    data object NavigateBack: RegisterEffect
-    data object Registered: RegisterEffect
+    data object NavigateBack : RegisterEffect
+    data object Registered : RegisterEffect
 }

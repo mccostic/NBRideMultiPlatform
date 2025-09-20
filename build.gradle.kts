@@ -12,6 +12,7 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint") version "12.1.1" apply true
     id("com.google.gms.google-services") version "4.4.3" apply false
     alias(libs.plugins.sonarqube)
+    alias(libs.plugins.detekt) apply false
 }
 
 ktlint {

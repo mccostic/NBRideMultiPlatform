@@ -1,11 +1,10 @@
 package com.dovoh.android_mvi.feature.login.fakes
 
-
+import com.dovoh.android_mvi.core.auth.model.UserDomainModel
 import com.dovoh.android_mvi.core.common.ApiResult
 import com.dovoh.android_mvi.feature.login.domain.AuthRepository
-import com.dovoh.android_mvi.core.auth.model.UserDomainModel
 
-class FakeAuthRepository:AuthRepository {
+class FakeAuthRepository : AuthRepository {
     var demoObject: UserDomainModel? = null
     var isSuccessful = true
     var exception: Exception = fakeException
@@ -20,5 +19,4 @@ class FakeAuthRepository:AuthRepository {
             throw exception
         }
     }
-
 }

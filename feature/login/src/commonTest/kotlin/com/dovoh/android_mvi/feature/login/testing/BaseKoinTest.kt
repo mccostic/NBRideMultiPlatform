@@ -8,7 +8,6 @@ import org.koin.test.KoinTest
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
-
 abstract class BaseKoinTest : KoinTest {
 
     abstract val overrideModule: Module

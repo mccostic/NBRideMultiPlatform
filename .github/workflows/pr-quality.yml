@@ -8,11 +8,19 @@ concurrency:
   group: pr-quality-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: write  # for PR comments (coverage)
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g" -Dkotlin.daemon.jvm.options="-Xmx2g" -Dorg.gradle.daemon=false
+
 jobs:
   # ---------- 0) Shared environment ----------
   _setup:
     name: Setup (macOS)
     runs-on: macos-latest
+    timeout-minutes: 5
     outputs:
       JAVA_VERSION: ${{ steps.out.outputs.JAVA_VERSION }}
     steps:
@@ -25,15 +33,15 @@ jobs:
     name: Ktlint
     runs-on: macos-latest
     needs: _setup
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        with: { fetch-depth: 0 }
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
       - name: Set up JDK
         uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ needs._setup.outputs.JAVA_VERSION }}
+        with: { distribution: temurin, java-version: ${{ needs._setup.outputs.JAVA_VERSION }} }
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
       - name: Run ktlintCheck
@@ -43,23 +51,44 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ktlint-reports
-          path: |
-            **/build/reports/ktlint/**
+          path: "**/build/reports/ktlint/**"
+
+  # ---------- 1b) Detekt ----------
+  detekt:
+    name: Detekt
+    runs-on: macos-latest
+    needs: _setup
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: ${{ needs._setup.outputs.JAVA_VERSION }} }
+      - uses: gradle/actions/setup-gradle@v3
+      - name: Run Detekt
+        run: ./gradlew detekt
+      - name: Upload Detekt report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detekt-report
+          path: "**/build/reports/detekt/**"
 
   # ---------- 2) Unit tests ----------
   unit_test:
     name: Unit Tests
     runs-on: macos-latest
-    needs: ktlint
+    needs: [ktlint, detekt]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        with: { fetch-depth: 0 }
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
       - name: Set up JDK
         uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+        with: { distribution: temurin, java-version: 17 }
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
       - name: Run tests (all modules)
@@ -69,23 +98,22 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-reports
-          path: |
-            **/build/reports/tests/**
+          path: "**/build/reports/tests/**"
 
   # ---------- 3) Android Lint ----------
   android_lint:
     name: Android Lint
     runs-on: macos-latest
     needs: unit_test
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        with: { fetch-depth: 0 }
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
       - name: Set up JDK
         uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+        with: { distribution: temurin, java-version: 17 }
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
       - name: Set up Gradle cache
@@ -104,14 +132,20 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-lint-reports
-          path: |
-            **/build/reports/lint/**
+          path: "**/build/reports/lint/**"
+      # Optional: if you generate SARIF via AGP, upload it to Security tab:
+      - name: Upload Lint SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "**/build/reports/lint-results-*.sarif"
 
   # ---------- 4) Coverage + Sonar (combined) ----------
   coverage_sonar:
     name: Coverage (Kover) + Sonar
     runs-on: macos-latest
     needs: unit_test
+    timeout-minutes: 30
     permissions:
       contents: read
       pull-requests: write
@@ -120,13 +154,12 @@ jobs:
       SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        with: { fetch-depth: 0 }
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
       - name: Set up JDK
         uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+        with: { distribution: temurin, java-version: 17 }
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
       - name: Generate Kover XML + HTML + Verify threshold
@@ -143,8 +176,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-kover
-          path: |
-            **/build/reports/kover/**
+          path: "**/build/reports/kover/**"
       - name: Sonar (PR)
         if: ${{ github.event_name == 'pull_request' }}
         run: |
@@ -163,20 +195,61 @@ jobs:
             -Dsonar.organization="mccostic" \
             -Dsonar.projectKey="mccostic_NBRideMultiPlatform" \
             -Dsonar.branch.name="${{ github.ref_name }}"
+
+  # ---------- 4b) Coverage % sticky PR comment ----------
+  kover_pr_comment:
+    name: Coverage PR Comment
+    runs-on: ubuntu-latest
+    needs: coverage_sonar
+    if: ${{ github.event_name == 'pull_request' }}
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-kover
+          path: kover
+      - name: Compute coverage
+        id: cov
+        shell: bash
+        run: |
+          sudo apt-get update && sudo apt-get install -y libxml2-utils > /dev/null 2>&1 || true
+          FILE=$(find kover -name "report.xml" | head -n 1)
+          if [ -z "$FILE" ]; then
+            echo "coverage=0" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          COVERED=$(xmllint --xpath "string(//counter[@type='INSTRUCTION']/@covered)" "$FILE" 2>/dev/null || echo "")
+          MISSED=$(xmllint --xpath "string(//counter[@type='INSTRUCTION']/@missed)" "$FILE" 2>/dev/null || echo "")
+          if [ -z "$COVERED" ] || [ -z "$MISSED" ]; then
+            echo "coverage=0" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          COV=$(echo "scale=2; 100 * $COVERED / ($COVERED + $MISSED)" | bc)
+          echo "coverage=$COV" >> $GITHUB_OUTPUT
+      - name: Post sticky comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: kover-coverage
+          message: |
+            ✅ **Kover Coverage**: **${{ steps.cov.outputs.coverage }}%**
+
   # ---------- 5) Assemble Integration (R8/ProGuard ON) ----------
   assemble_integration:
     name: Assemble Integration (R8)
     runs-on: macos-latest
     needs: [android_lint, coverage_sonar]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        with: { fetch-depth: 0 }
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
       - name: Set up JDK
         uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+        with: { distribution: temurin, java-version: 17 }
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
       - name: Set up Gradle cache
@@ -199,13 +272,94 @@ jobs:
           path: composeApp/build/outputs/mapping/integration/mapping.txt
           if-no-files-found: ignore
 
-  # ---------- 6) Quality Gate summary ----------
+  # ---------- 6) Dependency Analysis ----------
+  dependency_analysis:
+    name: Dependency Analysis
+    runs-on: macos-latest
+    needs: _setup
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v2
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: ${{ needs._setup.outputs.JAVA_VERSION }} }
+      - uses: gradle/actions/setup-gradle@v3
+      - run: ./gradlew buildHealth
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-analysis
+          path: "**/build/reports/dependency-analysis/**"
+
+  # ---------- 7) Semgrep (SAST) ----------
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: returntocorp/semgrep-action@v1
+        with:
+          generateSarif: true
+          sarifFile: semgrep.sarif
+          config: |
+            p/kotlin
+            p/secrets
+            .semgrep/custom-kmp.yml
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }} # optional
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+
+  # ---------- 8) Gitleaks (secrets) ----------
+  gitleaks:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # optional; OSS works without
+
+  # ---------- 9) Quality Gate summary ----------
   summary:
     name: Quality Summary
     runs-on: macos-latest
-    needs: [ktlint, unit_test, android_lint, coverage_sonar, assemble_integration]
+    needs:
+      - ktlint
+      - detekt
+      - unit_test
+      - android_lint
+      - coverage_sonar
+      - kover_pr_comment
+      - assemble_integration
+      - dependency_analysis
+      - semgrep
+      - gitleaks
     steps:
       - name: Summary
         run: |
-          echo "✅ Ktlint, Unit Tests, Android Lint, Coverage (Kover) + Sonar, and Integration (R8) build completed." >> $GITHUB_STEP_SUMMARY
-          echo "- Download artifacts for reports, APKs, and mapping.txt (if present)." >> $GITHUB_STEP_SUMMARY
+          {
+            echo "✅ **PR Quality Gate complete**"
+            echo ""
+            echo "- Ktlint ✓"
+            echo "- Detekt ✓"
+            echo "- Unit Tests ✓"
+            echo "- Android Lint ✓"
+            echo "- Kover + Sonar ✓"
+            echo "- Coverage PR Comment ✓"
+            echo "- Integration build (R8) ✓"
+            echo "- Dependency Analysis ✓"
+            echo "- Semgrep (SAST) ✓"
+            echo "- Gitleaks (secrets) ✓"
+            echo ""
+            echo "Artifacts: ktlint, detekt, unit-test, lint, coverage, APKs, mapping.txt, dependency analysis, Semgrep SARIF"
+          } >> $GITHUB_STEP_SUMMARY

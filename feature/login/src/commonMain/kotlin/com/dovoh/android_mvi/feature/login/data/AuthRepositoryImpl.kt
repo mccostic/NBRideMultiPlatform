@@ -12,9 +12,9 @@ import kotlinx.coroutines.IO
 class AuthRepositoryImpl(
     private val api: AuthApi,
     private val tokens: TokenRepository
-):AuthRepository {
+) : AuthRepository {
     override suspend fun login(username: String, password: String): ApiResult<UserDomainModel> =
-        safeApiCall(Dispatchers.IO){
+        safeApiCall(Dispatchers.IO) {
             val result = api.login(username, password)
             tokens.save(result.accessToken, result.refreshToken)
             result

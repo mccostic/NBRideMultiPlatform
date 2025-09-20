@@ -1,7 +1,6 @@
 package com.dovoh.android_mvi.feature.login
 
 import app.cash.turbine.ReceiveTurbine
-import app.cash.turbine.testIn
 import app.cash.turbine.turbineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.TestScope
