@@ -9,19 +9,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -34,15 +25,18 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
-import com.dovoh.android_mvi.core.common.ErrorDialog
 import com.dovoh.android_mvi.core.mvi.CommonEffect
 import com.dovoh.android_mvi.core.navigation.Route.Home
 import com.dovoh.android_mvi.core.navigation.Route.Login
 import com.dovoh.android_mvi.core.navigation.Route.Register
+import com.dovoh.android_mvi.designsystem.components.CollectCommonEffects
+import com.dovoh.android_mvi.designsystem.components.ErrorDialog
+import com.dovoh.android_mvi.designsystem.components.InlineErrorChip
+import com.dovoh.android_mvi.designsystem.components.LabeledTextField
+import com.dovoh.android_mvi.designsystem.components.PrimaryButton
+import com.dovoh.android_mvi.designsystem.components.SecondaryTextButton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 
@@ -70,13 +64,8 @@ fun LoginScreen(
         }
     }
 
-    // Collect effects
-    LaunchedEffect(commonEffects) {
-        commonEffects.mapNotNull {
-            it.toUserMessage()
-        }.collect {
-            msg -> action(LoginIntent.ShowDialog(msg))
-        }
+    CollectCommonEffects(commonEffects) { msg ->
+        action(LoginIntent.ShowDialog(msg))
     }
 
     LaunchedEffect(effects) {
@@ -85,10 +74,8 @@ fun LoginScreen(
             .collect { navigate -> navigate() }
     }
 
-    val bg = MaterialTheme.colorScheme.surface // page background
-
     Scaffold(
-        containerColor = bg,
+        containerColor =  MaterialTheme.colorScheme.surface ,
         bottomBar = {
             // Sticky bottom actions
             Column(
@@ -98,34 +85,24 @@ fun LoginScreen(
                     .imePadding()
                     .padding(horizontal = 24.dp, vertical = 16.dp)
             ) {
-                Button(
+
+                PrimaryButton(
+                    text = "Sign in",
                     onClick = {
                         keyboardController?.hide()
                         action(LoginIntent.Submit)
                     },
-                    shape = MaterialTheme.shapes.small,
-                    enabled =enable,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                ) {
-                    if (state.loading) {
-                        CircularProgressIndicator(
-                            strokeWidth = 2.dp,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        return@Button
-                    }
-                    Text("Sign in")
-                }
-                TextButton(
+                    enabled = enable,
+                    loading = state.loading,
+                    shape = MaterialTheme.shapes.small
+                )
+                SecondaryTextButton(
+                    text = "Create an account",
                     onClick = { action(LoginIntent.GoToRegister) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp)
-                ) {
-                    Text("Create an account")
-                }
+                )
             }
         }
     ) { inner ->
@@ -150,49 +127,42 @@ fun LoginScreen(
             )
             Spacer(Modifier.height(24.dp))
 
-            OutlinedTextField(
+            LabeledTextField(
                 value = state.email,
                 onValueChange = { action(LoginIntent.EmailChanged(it)) },
-                label = { Text("Username") },
+                label = "Username",
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(
-                    onNext = { passwordFocus.requestFocus() }
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
+                keyboardType = KeyboardType.Email,
+                onImeAction = {
+                    passwordFocus.requestFocus()
+                },
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(12.dp))
 
-            OutlinedTextField(
+            LabeledTextField(
                 value = state.password,
                 onValueChange = { action(LoginIntent.PasswordChanged(it)) },
-                label = { Text("Password") },
+                label = "Password",
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Password),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        keyboardController?.hide()
-                        focusManager.clearFocus()
-                        action(LoginIntent.Submit)
-
-                    }
-                ),
+                password = true,
+                imeAction = ImeAction.Done,
+                onImeAction = {
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                    action(LoginIntent.Submit)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(passwordFocus)
             )
 
             if (showErrorDialog) {
-                Spacer(Modifier.height(8.dp))
-                AssistChip(
+                InlineErrorChip(
+                    modifier = Modifier.padding(top = 8.dp),
+                    message = state.error.orEmpty(),
                     onClick = { action(LoginIntent.ShowDialog(state.error.orEmpty())) },
-                    label = { Text(state.error.orEmpty()) },
-                    colors = AssistChipDefaults.assistChipColors(
-                        labelColor = MaterialTheme.colorScheme.error
-                    )
                 )
             }
         }
@@ -205,12 +175,7 @@ fun LoginScreen(
         onDismiss = { action(LoginIntent.HideDialog) }
     )
 }
-private fun CommonEffect.toUserMessage(): String? = when (this) {
-    is CommonEffect.ServerIssue  -> "Invalid credentials"
-    is CommonEffect.NetworkIssue -> "Network Error!"
-    is CommonEffect.UnknownIssue -> "Something went wrong! \nPlease try again!"
-    else -> null
-}
+
 
 private fun LoginEffect.toNavAction(
     navController: NavController

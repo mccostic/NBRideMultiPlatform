@@ -7,4 +7,5 @@ sealed interface CommonEffect {
     data class ServerIssue(val code: Int) : CommonEffect
     object ParsingIssue : CommonEffect
     object UnknownIssue : CommonEffect
+    object Unauthorised : CommonEffect
 }

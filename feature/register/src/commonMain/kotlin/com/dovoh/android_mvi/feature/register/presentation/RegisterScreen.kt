@@ -9,19 +9,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -32,19 +23,26 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.dovoh.android_mvi.core.common.ErrorDialog
+import com.dovoh.android_mvi.core.mvi.CommonEffect
 import com.dovoh.android_mvi.core.navigation.Route.Login
 import com.dovoh.android_mvi.core.navigation.Route.Register
+import com.dovoh.android_mvi.designsystem.components.CollectCommonEffects
+import com.dovoh.android_mvi.designsystem.components.ErrorDialog
+import com.dovoh.android_mvi.designsystem.components.InlineErrorChip
+import com.dovoh.android_mvi.designsystem.components.LabeledTextField
+import com.dovoh.android_mvi.designsystem.components.PrimaryButton
+import com.dovoh.android_mvi.designsystem.components.SecondaryTextButton
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapNotNull
 
 @Composable
 fun RegisterScreen(
     state: RegisterState,
     action: (RegisterIntent) -> Unit = {},
     effects: Flow<RegisterEffect>,
+    commonEffects: Flow<CommonEffect>,
     navController: NavController
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
@@ -53,35 +51,18 @@ fun RegisterScreen(
     val emailFocus = remember { FocusRequester() }
     val passwordFocus = remember { FocusRequester() }
 
-    // Effects -> navigation
-    LaunchedEffect(Unit) {
-        effects.collect { eff ->
-            when (eff) {
-                RegisterEffect.NavigateBack -> navController.popBackStack()
-                RegisterEffect.Registered -> {
-                    // After successful sign up, go back to Login
-                    navController.navigate(Login) {
-                        popUpTo(Register) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                }
-            }
-        }
+    CollectCommonEffects(commonEffects) { msg ->
+        action(RegisterIntent.ShowDialog(msg))
     }
 
-    // Optional modal error (same approach as Login)
-    if (state.showErrorDialog) {
-        ErrorDialog(
-            title = "Sorry!",
-            message = state.error ?: "Registration failed",
-            onDismiss = { action(RegisterIntent.HideDialog) }
-        )
+    LaunchedEffect(effects) {
+        effects
+            .mapNotNull { it.toNavAction(navController) }
+            .collect { navigate -> navigate() }
     }
-
-    val bg = MaterialTheme.colorScheme.surface
 
     Scaffold(
-        containerColor = bg,
+        containerColor = MaterialTheme.colorScheme.surface,
         bottomBar = {
             Column(
                 modifier = Modifier
@@ -90,37 +71,26 @@ fun RegisterScreen(
                     .imePadding()
                     .padding(horizontal = 24.dp, vertical = 16.dp)
             ) {
-                Button(
+                PrimaryButton(
+                    text = "Create account",
                     onClick = {
                         keyboard?.hide()
                         action(RegisterIntent.Submit)
                     },
                     enabled = !state.loading &&
-                            state.name.isNotBlank() &&
-                            state.email.isNotBlank() &&
-                            state.password.isNotBlank(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
+                        state.name.isNotBlank() &&
+                        state.email.isNotBlank() &&
+                        state.password.isNotBlank(),
+                    loading = state.loading,
                     shape = MaterialTheme.shapes.small
-                ) {
-                    if (state.loading) {
-                        CircularProgressIndicator(
-                            strokeWidth = 2.dp,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    } else {
-                        Text("Create account")
-                    }
-                }
-                TextButton(
+                )
+                SecondaryTextButton(
+                    text = "Back to sign in",
                     onClick = { action(RegisterIntent.Back) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp)
-                ) {
-                    Text("Back to sign in")
-                }
+                )
             }
         }
     ) { inner ->
@@ -144,65 +114,84 @@ fun RegisterScreen(
             )
             Spacer(Modifier.height(24.dp))
 
-            OutlinedTextField(
+            LabeledTextField(
                 value = state.name,
                 onValueChange = { action(RegisterIntent.NameChanged(it)) },
-                label = { Text("Full name") },
+                label = "Full name",
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(
-                    onNext = { emailFocus.requestFocus() }
-                ),
+                keyboardType = KeyboardType.Text,
+                onImeAction = {
+                    emailFocus.requestFocus()
+                },
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(12.dp))
 
-            OutlinedTextField(
+            LabeledTextField(
                 value = state.email,
                 onValueChange = { action(RegisterIntent.EmailChanged(it)) },
-                label = { Text("Email") },
+                label = "Email",
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(
-                    onNext = { passwordFocus.requestFocus() }
-                ),
+                keyboardType = KeyboardType.Email,
+                onImeAction = {
+                    passwordFocus.requestFocus()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(emailFocus)
             )
 
+
             Spacer(Modifier.height(12.dp))
 
-            OutlinedTextField(
+            LabeledTextField(
                 value = state.password,
                 onValueChange = { action(RegisterIntent.PasswordChanged(it)) },
-                label = { Text("Password") },
+                label = "Password",
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = KeyboardType.Password),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        keyboard?.hide()
-                        focus.clearFocus()
-                        action(RegisterIntent.Submit)
-                    }
-                ),
+                password = true,
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done,
+                onImeAction = {
+                    keyboard?.hide()
+                    focus.clearFocus()
+                    action(RegisterIntent.Submit)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(passwordFocus)
             )
 
+
             if (state.error != null && !state.showErrorDialog) {
-                Spacer(Modifier.height(8.dp))
-                AssistChip(
+                InlineErrorChip(
+                    modifier = Modifier.padding(top = 8.dp),
+                    message = state.error,
                     onClick = { action(RegisterIntent.ShowDialog(state.error)) },
-                    label = { Text(state.error) },
-                    colors = AssistChipDefaults.assistChipColors(
-                        labelColor = MaterialTheme.colorScheme.error
-                    )
                 )
             }
         }
+    }
+
+    ErrorDialog(
+        showDialog = state.showErrorDialog,
+        title = "Sorry!",
+        message = state.error ?: "Registration failed",
+        onDismiss = { action(RegisterIntent.HideDialog) }
+    )
+}
+
+private fun RegisterEffect.toNavAction(
+    navController: NavController
+): (() -> Unit)? = when (this) {
+    RegisterEffect.NavigateBack -> {
+        { navController.popBackStack() }
+    }
+    RegisterEffect.Registered -> {
+        { navController.navigate(Login) {
+            popUpTo(Register) { inclusive = true }
+            launchSingleTop = true
+        } }
     }
 }

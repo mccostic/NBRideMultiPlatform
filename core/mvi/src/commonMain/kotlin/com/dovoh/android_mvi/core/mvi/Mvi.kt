@@ -92,7 +92,7 @@ abstract class MviViewModel<I : Any, S : Any, E : Any>(
             is BusinessException -> onBusinessError(e)
 
             is AppException.Unauthorized -> launchGuarded {
-                postCommon(CommonEffect.NavigateToLogin)
+                postCommon(CommonEffect.Unauthorised)
             }
             is AppException.Forbidden -> launchGuarded {
                 postCommon(CommonEffect.Toast("Access denied"))

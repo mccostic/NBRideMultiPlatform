@@ -42,7 +42,8 @@ internal fun NavGraphBuilder.publicGraph(nav: NavController) {
                 state = state,
                 action = vm::sendIntent,
                 effects = vm.effect,
-                navController = nav
+                navController = nav,
+                commonEffects = vm.commonEffect
             )
         }
     }

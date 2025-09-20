@@ -1,4 +1,4 @@
-package com.dovoh.android_mvi.core.common
+package com.dovoh.android_mvi.designsystem.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
