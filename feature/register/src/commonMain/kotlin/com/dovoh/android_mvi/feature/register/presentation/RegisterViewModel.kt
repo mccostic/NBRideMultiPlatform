@@ -1,6 +1,5 @@
 package com.dovoh.android_mvi.feature.register.presentation
 
-
 import com.dovoh.android_mvi.core.common.BusinessException
 import com.dovoh.android_mvi.core.logging.Log
 import com.dovoh.android_mvi.core.mvi.MviViewModel
@@ -41,18 +40,16 @@ class RegisterViewModel(
         setState { copy(loading = true, error = null) }
 
         launchApi(
-            call = {  register(s.name, s.email, s.password) },
+            call = { register(s.name, s.email, s.password) },
             onSuccess = {
                 setState { copy(loading = false) }
-                it?.let{
-                  //  mapper.map(it)
+                it?.let {
+                    //  mapper.map(it)
                 }
                 postEffect(RegisterEffect.Registered)
             }
         ).invokeOnCompletion {
             setState { copy(loading = false) }
         }
-
-
     }
 }

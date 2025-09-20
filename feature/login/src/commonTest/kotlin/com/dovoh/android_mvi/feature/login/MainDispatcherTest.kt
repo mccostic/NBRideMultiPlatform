@@ -16,7 +16,7 @@ import kotlin.test.BeforeTest
 open class MainDispatcherTest(
     internal val testDispatcher: TestDispatcher = UnconfinedTestDispatcher(),
     val testScope: CoroutineScope = TestScope(testDispatcher)
-){
+) {
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(testDispatcher)

@@ -5,13 +5,12 @@ import com.dovoh.android_mvi.core.common.ApiResult
 import com.dovoh.android_mvi.core.common.safeApiCall
 import com.dovoh.android_mvi.feature.register.domain.RegisterApi
 import com.dovoh.android_mvi.feature.register.domain.RegisterRepository
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 
-class RegisterRepositoryImpl(private val api: RegisterApi): RegisterRepository {
+class RegisterRepositoryImpl(private val api: RegisterApi) : RegisterRepository {
     override suspend fun register(name: String, email: String, pass: String): ApiResult<UserDomainModel?> =
         safeApiCall(Dispatchers.IO) {
             api.register(name, email, pass)
         }
 }
-
-

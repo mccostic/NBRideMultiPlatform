@@ -142,7 +142,6 @@ fun RegisterScreen(
                     .focusRequester(emailFocus)
             )
 
-
             Spacer(Modifier.height(12.dp))
 
             LabeledTextField(
@@ -162,7 +161,6 @@ fun RegisterScreen(
                     .fillMaxWidth()
                     .focusRequester(passwordFocus)
             )
-
 
             if (state.error != null && !state.showErrorDialog) {
                 InlineErrorChip(
@@ -189,9 +187,11 @@ private fun RegisterEffect.toNavAction(
         { navController.popBackStack() }
     }
     RegisterEffect.Registered -> {
-        { navController.navigate(Login) {
-            popUpTo(Register) { inclusive = true }
-            launchSingleTop = true
-        } }
+        {
+            navController.navigate(Login) {
+                popUpTo(Register) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
     }
 }

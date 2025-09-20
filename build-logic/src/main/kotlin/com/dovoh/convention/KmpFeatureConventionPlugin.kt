@@ -1,6 +1,8 @@
 package com.dovoh.convention
 
 import com.android.build.api.dsl.LibraryExtension
+import io.gitlab.arturbosch.detekt.Detekt
+import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -11,7 +13,9 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 class KmpFeatureConventionPlugin : Plugin<Project> {
+
     override fun apply(target: Project) = with(target) {
+        val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
         // Required plugins
         pluginManager.apply("org.jetbrains.kotlin.multiplatform")
         pluginManager.apply("com.android.library")
@@ -19,10 +23,8 @@ class KmpFeatureConventionPlugin : Plugin<Project> {
         pluginManager.apply("org.jetbrains.compose")
         pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
         pluginManager.apply("org.jetbrains.kotlinx.kover")
+        pluginManager.apply(libs.findPlugin("detekt").get().get().pluginId)
 
-
-        // Version catalog
-        val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
         // ---------------- Android config ----------------
         extensions.configure<LibraryExtension> {
             // e.g. :feature:login  -> com.dovoh.android_mvi.feature.login
@@ -99,6 +101,42 @@ class KmpFeatureConventionPlugin : Plugin<Project> {
                     // Choose ONE: Koin test OR MockK common
                     // implementation(libs.findLibrary("koinTest").get())
                 }
+            }
+        }
+
+        dependencies.add("detektPlugins", libs.findLibrary("detekt-formatting").get())
+
+        extensions.configure<DetektExtension>("detekt") {
+            buildUponDefaultConfig = true
+            parallel = true
+            config.setFrom(files(rootProject.file("config/detekt/detekt.yml")))
+            baseline = rootProject.file("config/detekt/baseline.xml").takeIf { it.exists() }
+
+            // If you set sources, use setFrom instead of direct assign:
+            source.setFrom(
+                files(
+                    "src/commonMain/kotlin",
+                    "src/commonTest/kotlin",
+                    "src/androidMain/kotlin",
+                    "src/main/kotlin",
+                    "src/test/kotlin"
+                )
+            )
+
+            basePath = rootProject.projectDir.absolutePath
+        }
+
+        tasks.withType(Detekt::class.java).configureEach {
+            // Task-level inputs (ok to use setSource here)
+            setSource(files(projectDir))
+            include("**/*.kt", "**/*.kts")
+            exclude("**/build/**", "**/.gradle/**", "**/generated/**")
+
+            reports {
+                xml.required.set(true)
+                html.required.set(true)
+                txt.required.set(false)
+                sarif.required.set(false)
             }
         }
     }

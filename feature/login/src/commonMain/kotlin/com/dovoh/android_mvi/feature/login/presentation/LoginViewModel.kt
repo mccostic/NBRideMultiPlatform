@@ -1,4 +1,5 @@
 package com.dovoh.android_mvi.feature.login.presentation
+
 import com.dovoh.android_mvi.core.auth.model.UserDomainModel
 import com.dovoh.android_mvi.core.common.BusinessException
 import com.dovoh.android_mvi.core.common.Mapper
@@ -14,16 +15,16 @@ class LoginViewModel(
 ) : MviViewModel<LoginIntent, LoginState, LoginEffect>(LoginState()) {
 
     override suspend fun handleIntent(intent: LoginIntent) = when (intent) {
-        is LoginIntent.EmailChanged   -> setState { copy(email = intent.value, error = null) }
-        is LoginIntent.PasswordChanged-> setState { copy(password = intent.value, error = null) }
-        LoginIntent.Submit            -> submit()
-        LoginIntent.GoToRegister      -> postEffect(LoginEffect.NavigateRegister)
+        is LoginIntent.EmailChanged -> setState { copy(email = intent.value, error = null) }
+        is LoginIntent.PasswordChanged -> setState { copy(password = intent.value, error = null) }
+        LoginIntent.Submit -> submit()
+        LoginIntent.GoToRegister -> postEffect(LoginEffect.NavigateRegister)
         is LoginIntent.ShowDialog -> {
-            setState { copy(error = intent.message,showErrorDialog= true) }
+            setState { copy(error = intent.message, showErrorDialog = true) }
         }
 
         LoginIntent.HideDialog -> {
-            setState { copy(error = null,showErrorDialog= false) }
+            setState { copy(error = null, showErrorDialog = false) }
         }
     }
 
@@ -39,7 +40,7 @@ class LoginViewModel(
         launchApi(
             call = { login(s.email, s.password) },
             onSuccess = {
-                it?.let{
+                it?.let {
                     mapper.map(it).let {
                         Log.d("TESTING_LOGGED_IN_USR", it.toString())
                     }
@@ -49,10 +50,8 @@ class LoginViewModel(
                 postEffect(LoginEffect.NavigateHome)
             }
         ).invokeOnCompletion {
-           setState { copy(loading = false) }
+            setState { copy(loading = false) }
         }
-
-
     }
 
     /**

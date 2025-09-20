@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.android.gradle.plugin)        // com.android.tools.build:gradle:<agp>
     implementation(libs.compose.gradle.plugin)        // org.jetbrains.compose:compose-gradle-plugin:<composeMultiplatform>
     implementation(libs.kotlin.serialization.plugin)  // org.jetbrains.kotlin:kotlin-serialization:<kotlin>
+    implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.23.8")
 }
 group = "com.dovoh.convention"
 version = "0.1.0"

@@ -1,6 +1,5 @@
 package com.dovoh.android_mvi.feature.login.fakes
 
-
 import com.dovoh.android_mvi.core.auth.model.UserDomainModel
 import com.dovoh.android_mvi.feature.login.domain.LoginException
 

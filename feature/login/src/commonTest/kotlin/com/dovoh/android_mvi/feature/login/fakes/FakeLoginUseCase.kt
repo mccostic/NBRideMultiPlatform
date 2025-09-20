@@ -4,9 +4,6 @@ import com.dovoh.android_mvi.core.auth.model.UserDomainModel
 import com.dovoh.android_mvi.core.common.ApiResult
 import com.dovoh.android_mvi.feature.login.domain.LoginUseCase
 
-
-
-
 class FakeLoginUseCase : LoginUseCase {
     var exception: Exception = fakeException
     var demoObject: UserDomainModel? = null
