@@ -1,6 +1,7 @@
 package com.dovoh.convention
 
 import com.android.build.api.dsl.LibraryExtension
+import com.android.build.api.dsl.ApplicationExtension
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import org.gradle.api.JavaVersion
@@ -43,6 +44,26 @@ class KmpFeatureConventionPlugin : Plugin<Project> {
                 sourceCompatibility = JavaVersion.VERSION_17
                 targetCompatibility = JavaVersion.VERSION_17
             }
+
+            // ✅ Add SARIF + HTML + XML reports
+            lint {
+                sarifReport = true
+                htmlReport = true
+                xmlReport = true
+                checkReleaseBuilds = false
+                abortOnError = false
+            }
+        }
+
+        // ✅ Optional: handle app modules if this convention is applied there
+        extensions.findByType(ApplicationExtension::class.java)?.apply {
+            lint {
+                sarifReport = true
+                htmlReport = true
+                xmlReport = true
+                checkReleaseBuilds = false
+                abortOnError = false
+            }
         }
 
         // ---------------- KMP targets + source sets ----------------
@@ -64,11 +85,12 @@ class KmpFeatureConventionPlugin : Plugin<Project> {
             sourceSets.named("commonMain").configure {
                 dependencies {
                     // Compose MPP
-
                     implementation(libs.findLibrary("compose-runtime").get())
                     implementation(libs.findLibrary("compose-foundation").get())
                     implementation(libs.findLibrary("compose-material3").get())
-                    implementation(libs.findLibrary("navigation-compose").get())           // DI / coroutines
+                    implementation(libs.findLibrary("navigation-compose").get())
+
+                    // DI / coroutines
                     implementation(libs.findLibrary("koin-compose-viewmodel").get())
                     implementation(libs.findLibrary("koin-core").get())
                     implementation(libs.findLibrary("coroutines-core").get())
