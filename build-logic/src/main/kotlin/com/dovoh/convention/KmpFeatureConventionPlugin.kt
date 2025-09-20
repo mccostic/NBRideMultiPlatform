@@ -24,6 +24,7 @@ class KmpFeatureConventionPlugin : Plugin<Project> {
         pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
         pluginManager.apply("org.jetbrains.kotlinx.kover")
         pluginManager.apply(libs.findPlugin("detekt").get().get().pluginId)
+        pluginManager.apply(libs.findPlugin("dependency-analysis").get().get().pluginId)
 
         // ---------------- Android config ----------------
         extensions.configure<LibraryExtension> {

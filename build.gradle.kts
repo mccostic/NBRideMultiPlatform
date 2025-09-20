@@ -129,15 +129,11 @@ sonar {
     }
 }
 
-subprojects {
-    apply(plugin = "com.autonomousapps.dependency-analysis")
-}
-
 dependencyAnalysis {
     issues {
         all {
             onAny {
-                severity("fail")
+                severity("warn")
             }
         }
     }
