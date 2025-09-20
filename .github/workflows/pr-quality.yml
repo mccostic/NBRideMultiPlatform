@@ -13,8 +13,10 @@ permissions:
   pull-requests: write  # for PR comments (coverage)
 
 env:
-  GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g" -Dkotlin.daemon.jvm.options="-Xmx2g" -Dorg.gradle.daemon=false
-
+  GRADLE_OPTS: >
+    -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g"
+    -Dkotlin.daemon.jvm.options="-Xmx2g"
+    -Dorg.gradle.daemon=false
 jobs:
   # ---------- 0) Shared environment ----------
   _setup:
