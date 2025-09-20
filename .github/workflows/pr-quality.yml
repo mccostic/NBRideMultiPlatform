@@ -2,7 +2,8 @@ name: PR Quality Gate (macOS)
 
 on:
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 concurrency:
   group: pr-quality-${{ github.event.pull_request.number || github.ref }}
@@ -10,13 +11,14 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: write  # for PR comments (coverage)
+  pull-requests: write   # for PR comments (coverage)
 
 env:
   GRADLE_OPTS: >
     -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g"
     -Dkotlin.daemon.jvm.options="-Xmx2g"
     -Dorg.gradle.daemon=false
+
 jobs:
   # ---------- 0) Shared environment ----------
   _setup:
@@ -38,16 +40,24 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2
+
       - name: Set up JDK
         uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: ${{ needs._setup.outputs.JAVA_VERSION }} }
+        with:
+          distribution: temurin
+          java-version: ${{ needs._setup.outputs.JAVA_VERSION }}
+
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
+
       - name: Run ktlintCheck
         run: ./gradlew ktlintCheck
+
       - name: Upload ktlint reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -63,13 +73,22 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: ${{ needs._setup.outputs.JAVA_VERSION }} }
-      - uses: gradle/actions/setup-gradle@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ needs._setup.outputs.JAVA_VERSION }}
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Run Detekt
         run: ./gradlew detekt
+
       - name: Upload Detekt report
         if: always()
         uses: actions/upload-artifact@v4
@@ -81,20 +100,30 @@ jobs:
   unit_test:
     name: Unit Tests
     runs-on: macos-latest
-    needs: [ktlint, detekt]
+    needs:
+      - ktlint
+      - detekt
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2
+
       - name: Set up JDK
         uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 17 }
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
+
       - name: Run tests (all modules)
         run: ./gradlew test
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -110,16 +139,24 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2
+
       - name: Set up JDK
         uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 17 }
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
+
       - name: Run Android Lint
         shell: bash
         run: |
@@ -129,12 +166,14 @@ jobs:
           else
             ./gradlew lint
           fi
+
       - name: Upload lint reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: android-lint-reports
           path: "**/build/reports/lint/**"
+
       # Optional: if you generate SARIF via AGP, upload it to Security tab:
       - name: Upload Lint SARIF
         if: always()
@@ -156,16 +195,24 @@ jobs:
       SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2
+
       - name: Set up JDK
         uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 17 }
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
+
       - name: Generate Kover XML + HTML + Verify threshold
         run: ./gradlew koverXmlReport koverHtmlReport koverVerify
+
       - name: Generate Android Lint report (for Sonar)
         run: |
           if ./gradlew :composeApp:tasks --all | grep -q "^lintIntegration "; then
@@ -173,12 +220,14 @@ jobs:
           else
             ./gradlew lint
           fi
+
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-kover
           path: "**/build/reports/kover/**"
+
       - name: Sonar (PR)
         if: ${{ github.event_name == 'pull_request' }}
         run: |
@@ -189,6 +238,7 @@ jobs:
             -Dsonar.pullrequest.key="${{ github.event.pull_request.number }}" \
             -Dsonar.pullrequest.branch="${{ github.head_ref }}" \
             -Dsonar.pullrequest.base="${{ github.base_ref }}"
+
       - name: Sonar (branch)
         if: ${{ github.event_name != 'pull_request' }}
         run: |
@@ -213,6 +263,7 @@ jobs:
         with:
           name: coverage-kover
           path: kover
+
       - name: Compute coverage
         id: cov
         shell: bash
@@ -231,6 +282,7 @@ jobs:
           fi
           COV=$(echo "scale=2; 100 * $COVERED / ($COVERED + $MISSED)" | bc)
           echo "coverage=$COV" >> $GITHUB_OUTPUT
+
       - name: Post sticky comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
@@ -242,22 +294,33 @@ jobs:
   assemble_integration:
     name: Assemble Integration (R8)
     runs-on: macos-latest
-    needs: [android_lint, coverage_sonar]
+    needs:
+      - android_lint
+      - coverage_sonar
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2
+
       - name: Set up JDK
         uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 17 }
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v3
+
       - name: Build Integration APK (minify/shrink enabled)
         run: ./gradlew :composeApp:assembleIntegration
+
       - name: Upload APK(s)
         if: always()
         uses: actions/upload-artifact@v4
@@ -266,6 +329,7 @@ jobs:
           path: |
             composeApp/build/outputs/apk/integration/*.apk
             **/build/outputs/apk/integration/*.apk
+
       - name: Upload mapping.txt (if generated)
         if: always()
         uses: actions/upload-artifact@v4
@@ -282,14 +346,25 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: ${{ needs._setup.outputs.JAVA_VERSION }} }
-      - uses: gradle/actions/setup-gradle@v3
-      - run: ./gradlew buildHealth
-      - uses: actions/upload-artifact@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ needs._setup.outputs.JAVA_VERSION }}
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Dependency analysis
+        run: ./gradlew buildHealth
+
+      - name: Upload Dependency Analysis reports
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: dependency-analysis
           path: "**/build/reports/dependency-analysis/**"
@@ -304,7 +379,9 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
-      - uses: returntocorp/semgrep-action@v1
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
         with:
           generateSarif: true
           sarifFile: semgrep.sarif
@@ -314,6 +391,7 @@ jobs:
             .semgrep/custom-kmp.yml
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }} # optional
+
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
@@ -326,8 +404,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: gitleaks/gitleaks-action@v2
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
         env:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # optional; OSS works without
 
