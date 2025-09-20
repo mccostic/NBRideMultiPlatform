@@ -1,13 +1,13 @@
 package com.dovoh.android_mvi.feature.register.presentation
 
 
-import com.dovoh.android_mvi.core.common.ApiResult
 import com.dovoh.android_mvi.core.common.BusinessException
+import com.dovoh.android_mvi.core.logging.Log
 import com.dovoh.android_mvi.core.mvi.MviViewModel
 import com.dovoh.android_mvi.feature.register.domain.RegisterUseCase
 
 class RegisterViewModel(
-    private val register: RegisterUseCase
+    private val register: RegisterUseCase,
 ) : MviViewModel<RegisterIntent, RegisterState, RegisterEffect>(RegisterState()) {
 
     override suspend fun handleIntent(intent: RegisterIntent) = when (intent) {
@@ -25,20 +25,34 @@ class RegisterViewModel(
     }
 
     override fun onBusinessError(e: BusinessException) {
-        // Noncompliant - method is empty
+        Log.d("onBusinessError", "Error: ${e.message}")
+        when (e) {
+            else ->
+                setState { copy(loading = false, error = e.message ?: "Registration failed") }
+        }
     }
 
-    private suspend fun submit() {
+    private fun submit() {
         val s = state.value
         if (s.name.isBlank() || s.email.isBlank() || s.password.isBlank()) {
             setState { copy(error = "All fields are required.") }
             return
         }
         setState { copy(loading = true, error = null) }
-        when (val res = register(s.name, s.email, s.password)) {
-            is ApiResult.Success -> { setState { copy(loading = false, success = true) }; postEffect(
-                RegisterEffect.Registered) }
-            is ApiResult.Error ->  setState { copy(loading = false, error = res.error.message ?: "Registration failed", showErrorDialog = true) }
+
+        launchApi(
+            call = {  register(s.name, s.email, s.password) },
+            onSuccess = {
+                setState { copy(loading = false) }
+                it?.let{
+                  //  mapper.map(it)
+                }
+                postEffect(RegisterEffect.Registered)
+            }
+        ).invokeOnCompletion {
+            setState { copy(loading = false) }
         }
+
+
     }
 }
