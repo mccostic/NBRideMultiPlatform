@@ -174,13 +174,6 @@ jobs:
           name: android-lint-reports
           path: "**/build/reports/lint/**"
 
-      # Optional: if you generate SARIF via AGP, upload it to Security tab:
-      - name: Upload Lint SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: "**/build/reports/lint-results-*.sarif"
-
   # ---------- 4) Coverage + Sonar (combined) ----------
   coverage_sonar:
     name: Coverage (Kover) + Sonar
