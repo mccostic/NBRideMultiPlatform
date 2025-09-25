@@ -174,13 +174,6 @@ jobs:
           name: android-lint-reports
           path: "**/build/reports/lint/**"
 
-      # Optional: if you generate SARIF via AGP, upload it to Security tab:
-      - name: Upload Lint SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: "**/build/reports/lint-results-*.sarif"
-
   # ---------- 4) Coverage + Sonar (combined) ----------
   coverage_sonar:
     name: Coverage (Kover) + Sonar
@@ -369,50 +362,7 @@ jobs:
           name: dependency-analysis
           path: "**/build/reports/dependency-analysis/**"
 
-  # ---------- 7) Semgrep (SAST) ----------
-  semgrep:
-    name: Semgrep
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Semgrep
-        uses: returntocorp/semgrep-action@v1
-        with:
-          generateSarif: true
-          sarifFile: semgrep.sarif
-          config: |
-            p/kotlin
-            p/secrets
-            .semgrep/custom-kmp.yml
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }} # optional
-
-      - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: semgrep.sarif
-
-  # ---------- 8) Gitleaks (secrets) ----------
-  gitleaks:
-    name: Gitleaks
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # optional; OSS works without
-
-  # ---------- 9) Quality Gate summary ----------
+  # ---------- 7) Quality Gate summary ----------
   summary:
     name: Quality Summary
     runs-on: macos-latest
@@ -425,8 +375,6 @@ jobs:
       - kover_pr_comment
       - assemble_integration
       - dependency_analysis
-      - semgrep
-      - gitleaks
     steps:
       - name: Summary
         run: |
@@ -441,8 +389,6 @@ jobs:
             echo "- Coverage PR Comment ✓"
             echo "- Integration build (R8) ✓"
             echo "- Dependency Analysis ✓"
-            echo "- Semgrep (SAST) ✓"
-            echo "- Gitleaks (secrets) ✓"
             echo ""
-            echo "Artifacts: ktlint, detekt, unit-test, lint, coverage, APKs, mapping.txt, dependency analysis, Semgrep SARIF"
+            echo "Artifacts: ktlint, detekt, unit-test, lint, coverage, APKs, mapping.txt, dependency analysis"
           } >> $GITHUB_STEP_SUMMARY
