@@ -1,226 +1,121 @@
 package com.dovoh.android_mvi.feature.home.presentation.components
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.RadialGradientShader
-import androidx.compose.ui.graphics.ShaderBrush
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import com.dovoh.android_mvi.feature.home.presentation.RideScreen
 import com.dovoh.android_mvi.feature.home.presentation.RideState
-import com.dovoh.android_mvi.feature.home.presentation.theme.RideColors
+import com.dovoh.android_mvi.feature.home.presentation.components.map.MapLatLng
+import com.dovoh.android_mvi.feature.home.presentation.components.map.MapMarker
+import com.dovoh.android_mvi.feature.home.presentation.components.map.MarkerType
+import com.dovoh.android_mvi.feature.home.presentation.components.map.NativeMapView
+
+private const val SF_LAT = 37.7749
+private const val SF_LNG = -122.4194
+private const val DEFAULT_ZOOM = 13f
 
 @Composable
 fun MapView(
     state: RideState,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(
-                        RideColors.MapDark1,
-                        RideColors.MapDark2,
-                        RideColors.MapDark3,
-                    ),
+    val markers = remember(state.origin, state.destination, state.screen, state.rideProgress) {
+        buildList {
+            // Origin marker
+            state.origin?.let { origin ->
+                if (origin.lat != 0.0) {
+                    add(
+                        MapMarker(
+                            lat = origin.lat,
+                            lng = origin.lng,
+                            title = origin.name,
+                            type = MarkerType.ORIGIN,
+                        )
+                    )
+                } else {
+                    // Default to SF center for "Current Location"
+                    add(
+                        MapMarker(
+                            lat = SF_LAT,
+                            lng = SF_LNG,
+                            title = "You",
+                            type = MarkerType.ORIGIN,
+                        )
+                    )
+                }
+            }
+
+            // Destination marker
+            state.destination?.let { dest ->
+                add(
+                    MapMarker(
+                        lat = dest.lat,
+                        lng = dest.lng,
+                        title = dest.name,
+                        type = MarkerType.DESTINATION,
+                    )
                 )
-            )
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawGrid()
-            drawRoads()
-            drawCityBlocks()
+            }
 
+            // Nearby cars on home screen
             if (state.screen == RideScreen.Home) {
-                drawNearbyCars()
+                val nearbyCars = listOf(
+                    37.7780 to -122.4150,
+                    37.7720 to -122.4230,
+                    37.7800 to -122.4100,
+                    37.7690 to -122.4180,
+                )
+                nearbyCars.forEachIndexed { i, (lat, lng) ->
+                    add(MapMarker(lat, lng, "Car ${i + 1}", MarkerType.CAR))
+                }
             }
 
-            val showRoute = state.screen in listOf(
-                RideScreen.RideOptions,
-                RideScreen.DriverFound,
-                RideScreen.InRide,
-            )
-            if (showRoute) {
-                drawRoute()
+            // Driver position during ride
+            if (state.screen == RideScreen.InRide && state.driver != null) {
+                val originLat = state.origin?.lat?.takeIf { it != 0.0 } ?: SF_LAT
+                val originLng = state.origin?.lng?.takeIf { it != 0.0 } ?: SF_LNG
+                val destLat = state.destination?.lat ?: SF_LAT
+                val destLng = state.destination?.lng ?: SF_LNG
+                val fraction = state.rideProgress / 100f
+                val driverLat = originLat + (destLat - originLat) * fraction
+                val driverLng = originLng + (destLng - originLng) * fraction
+                add(MapMarker(driverLat, driverLng, "Driver", MarkerType.DRIVER))
             }
-
-            if (state.origin != null) {
-                drawOriginPin()
-            }
-
-            if (state.destination != null) {
-                drawDestinationPin(state.destination.name)
-            }
-
-            if (state.screen == RideScreen.InRide) {
-                drawDriverOnRoute(state.rideProgress)
-            }
-
-            drawVignette()
         }
     }
-}
 
-private fun DrawScope.drawGrid() {
-    val gridColor = RideColors.GridLine.copy(alpha = 0.12f)
-    val step = size.width / 18f
-    for (i in 0..20) {
-        val y = i * step
-        drawLine(gridColor, Offset(0f, y), Offset(size.width, y), strokeWidth = 0.5f)
-    }
-    for (i in 0..20) {
-        val x = i * step
-        drawLine(gridColor, Offset(x, 0f), Offset(x, size.height), strokeWidth = 0.5f)
-    }
-}
-
-private fun DrawScope.drawRoads() {
-    val roadColor = RideColors.Road.copy(alpha = 0.3f)
-    val majorColor = RideColors.RoadMajor.copy(alpha = 0.3f)
-    val w = size.width
-    val h = size.height
-
-    // Horizontal roads
-    drawLine(roadColor, Offset(0f, h * 0.45f), Offset(w, h * 0.48f), strokeWidth = 3f)
-    drawLine(roadColor, Offset(0f, h * 0.65f), Offset(w, h * 0.70f), strokeWidth = 2f)
-
-    // Vertical roads
-    drawLine(roadColor, Offset(w * 0.25f, 0f), Offset(w * 0.32f, h), strokeWidth = 3f)
-    drawLine(roadColor, Offset(w * 0.65f, 0f), Offset(w * 0.68f, h), strokeWidth = 2f)
-
-    // Major roads
-    drawLine(majorColor, Offset(w * 0.45f, 0f), Offset(w * 0.48f, h), strokeWidth = 5f)
-    drawLine(majorColor, Offset(0f, h * 0.30f), Offset(w, h * 0.28f), strokeWidth = 5f)
-}
-
-private fun DrawScope.drawCityBlocks() {
-    val blocks = listOf(
-        38f to 28f, 55f to 35f, 42f to 52f, 68f to 45f, 30f to 60f,
-        75f to 28f, 62f to 65f, 48f to 78f, 82f to 55f, 20f to 42f,
-        90f to 70f, 15f to 75f, 58f to 18f, 35f to 85f, 72f to 82f,
-    )
-    val blockW = 24f
-    val blockH = 16f
-    blocks.forEach { (xPct, yPct) ->
-        val x = size.width * xPct / 100f - blockW / 2
-        val y = size.height * yPct / 100f - blockH / 2
-        drawRect(
-            color = RideColors.CityBlock,
-            topLeft = Offset(x, y),
-            size = Size(blockW, blockH),
+    val routePoints = remember(state.origin, state.destination, state.screen) {
+        val showRoute = state.screen in listOf(
+            RideScreen.RideOptions,
+            RideScreen.DriverFound,
+            RideScreen.InRide,
         )
-        drawRect(
-            color = RideColors.CityBlockBorder,
-            topLeft = Offset(x, y),
-            size = Size(blockW, blockH),
-            style = Stroke(width = 1f),
-        )
+        if (showRoute && state.destination != null) {
+            val originLat = state.origin?.lat?.takeIf { it != 0.0 } ?: SF_LAT
+            val originLng = state.origin?.lng?.takeIf { it != 0.0 } ?: SF_LNG
+            val destLat = state.destination.lat
+            val destLng = state.destination.lng
+            // Simple straight-line route with a mid-point offset for curve feel
+            val midLat = (originLat + destLat) / 2 + 0.003
+            val midLng = (originLng + destLng) / 2 - 0.005
+            listOf(
+                MapLatLng(originLat, originLng),
+                MapLatLng(midLat, midLng),
+                MapLatLng(destLat, destLng),
+            )
+        } else {
+            null
+        }
     }
-}
 
-private fun DrawScope.drawNearbyCars() {
-    val cars = listOf(36f to 42f, 55f to 50f, 70f to 38f, 48f to 65f)
-    val carColor = RideColors.Cyan.copy(alpha = 0.7f)
-    cars.forEach { (xPct, yPct) ->
-        val cx = size.width * xPct / 100f
-        val cy = size.height * yPct / 100f
-        // Glow circle
-        drawCircle(
-            color = RideColors.Cyan.copy(alpha = 0.15f),
-            radius = 12f,
-            center = Offset(cx, cy),
-        )
-        // Car dot
-        drawCircle(
-            color = carColor,
-            radius = 5f,
-            center = Offset(cx, cy),
-        )
-    }
-}
-
-private fun DrawScope.drawRoute() {
-    val path = Path().apply {
-        moveTo(size.width * 0.48f, size.height * 0.70f)
-        quadraticTo(
-            size.width * 0.40f, size.height * 0.50f,
-            size.width * 0.52f, size.height * 0.35f,
-        )
-    }
-    drawPath(
-        path = path,
-        brush = Brush.horizontalGradient(
-            colors = listOf(RideColors.Cyan, RideColors.Purple),
-        ),
-        style = Stroke(
-            width = 3f,
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 8f), 0f),
-            cap = StrokeCap.Round,
-        ),
-    )
-}
-
-private fun DrawScope.drawOriginPin() {
-    val cx = size.width * 0.48f
-    val cy = size.height * 0.70f
-    // Glow
-    drawCircle(RideColors.Cyan.copy(alpha = 0.3f), 16f, Offset(cx, cy))
-    // Pin dot
-    drawCircle(RideColors.Cyan, 6f, Offset(cx, cy))
-    // Inner dot
-    drawCircle(Color.Black, 2.5f, Offset(cx, cy))
-}
-
-private fun DrawScope.drawDestinationPin(name: String) {
-    val cx = size.width * 0.52f
-    val cy = size.height * 0.35f
-    // Glow
-    drawCircle(RideColors.Purple.copy(alpha = 0.4f), 16f, Offset(cx, cy))
-    // Pin dot
-    drawCircle(RideColors.Purple, 6f, Offset(cx, cy))
-    // Inner dot
-    drawCircle(Color.White, 2.5f, Offset(cx, cy))
-}
-
-private fun DrawScope.drawDriverOnRoute(progress: Float) {
-    val fraction = progress / 100f
-    val startX = size.width * 0.48f
-    val startY = size.height * 0.70f
-    val endX = size.width * 0.52f
-    val endY = size.height * 0.35f
-    val cx = startX + (endX - startX) * fraction
-    val cy = startY + (endY - startY) * fraction
-    // Glow
-    drawCircle(RideColors.Cyan.copy(alpha = 0.4f), 14f, Offset(cx, cy))
-    // Driver dot
-    drawCircle(RideColors.Cyan, 7f, Offset(cx, cy))
-    drawCircle(Color.White, 3f, Offset(cx, cy))
-}
-
-private fun DrawScope.drawVignette() {
-    val center = Offset(size.width / 2f, size.height / 2f)
-    val radius = maxOf(size.width, size.height) * 0.7f
-    val shader = RadialGradientShader(
-        center = center,
-        radius = radius,
-        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
-        colorStops = listOf(0.4f, 1.0f),
-    )
-    drawRect(
-        brush = ShaderBrush(shader),
-        size = size,
+    NativeMapView(
+        modifier = modifier.fillMaxSize(),
+        cameraLat = SF_LAT,
+        cameraLng = SF_LNG,
+        cameraZoom = DEFAULT_ZOOM,
+        markers = markers,
+        routePoints = routePoints,
+        darkMode = true,
     )
 }

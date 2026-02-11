@@ -73,6 +73,11 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
 
+        // Google Maps API key - set via gradle.properties or environment variable
+        manifestPlaceholders["MAPS_API_KEY"] = findProperty("MAPS_API_KEY")?.toString()
+            ?: System.getenv("MAPS_API_KEY")
+            ?: "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+
         val versionNameBase = (project.findProperty("VERSION_NAME_BASE") as String?) ?: "1.0.0.0"
 
         val buildNumber = (project.findProperty("buildNumber") as String?)

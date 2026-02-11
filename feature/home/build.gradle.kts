@@ -7,6 +7,10 @@ kotlin {
         commonMain {
         }
         androidMain {
+            dependencies {
+                implementation(libs.google.maps.compose)
+                implementation(libs.google.play.services.maps)
+            }
         }
     }
 }
