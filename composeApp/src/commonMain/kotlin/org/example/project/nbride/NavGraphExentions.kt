@@ -12,6 +12,7 @@ import com.dovoh.android_mvi.core.navigation.Route.Home
 import com.dovoh.android_mvi.core.navigation.Route.Login
 import com.dovoh.android_mvi.core.navigation.Route.Register
 import com.dovoh.android_mvi.feature.home.presentation.HomeScreen
+import com.dovoh.android_mvi.feature.home.presentation.RideViewModel
 import com.dovoh.android_mvi.feature.login.presentation.LoginScreen
 import com.dovoh.android_mvi.feature.login.presentation.LoginViewModel
 import com.dovoh.android_mvi.feature.register.presentation.RegisterScreen
@@ -55,7 +56,12 @@ internal fun NavGraphBuilder.authedGraph(nav: NavController) {
         startDestination = Home
     ) {
         composable<Home> {
-            HomeScreen()
+            val vm = koinViewModel<RideViewModel>()
+            val state by vm.state.collectAsStateWithLifecycle()
+            HomeScreen(
+                state = state,
+                onIntent = vm::sendIntent,
+            )
         }
     }
 }

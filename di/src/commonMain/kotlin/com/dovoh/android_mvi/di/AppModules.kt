@@ -24,6 +24,7 @@ import com.dovoh.android_mvi.feature.register.domain.RegisterApi
 import com.dovoh.android_mvi.feature.register.domain.RegisterRepository
 import com.dovoh.android_mvi.feature.register.domain.RegisterUseCase
 import com.dovoh.android_mvi.feature.register.domain.RegisterUseCaseImpl
+import com.dovoh.android_mvi.feature.home.presentation.RideViewModel
 import com.dovoh.android_mvi.feature.register.presentation.RegisterViewModel
 import org.koin.dsl.module
 
@@ -53,6 +54,10 @@ val registerModule = module {
     factory { RegisterViewModel(get()) }
 }
 
+val rideModule = module {
+    factory { RideViewModel() }
+}
+
 val appModule = module {
-    includes(coreModule,loginMappersModule, loginModule, registerModule)
+    includes(coreModule, loginMappersModule, loginModule, registerModule, rideModule)
 }

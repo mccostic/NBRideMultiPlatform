@@ -30,6 +30,8 @@ buildKonfig = "0.17.1"
 firebaseAppDistribution = "5.1.1"
 sonarqube ="6.3.1.5724"
 detekt = "1.23.8"
+googleMapsCompose = "6.4.1"
+playServicesMaps = "19.1.0"
 
 
 
@@ -81,6 +83,10 @@ compose-runtime     = { module = "org.jetbrains.compose.runtime:runtime",     ve
 compose-foundation  = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
 compose-material3   = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMaterial3" }
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+
+# --- Maps ---
+google-maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "googleMapsCompose" }
+google-play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMaps" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
