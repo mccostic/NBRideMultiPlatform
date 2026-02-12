@@ -1,8 +1,8 @@
 package com.dovoh.android_mvi.feature.login.presentation
 
 data class LoginState(
-    val email: String = "",
-    val password: String = "",
+    val email: String = "emilys",
+    val password: String = "emilyspass",
     val loading: Boolean = false,
     val error: String? = null,
     val showErrorDialog: Boolean = false

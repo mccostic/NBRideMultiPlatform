@@ -21,6 +21,11 @@ import platform.UIKit.UIUserInterfaceStyle
 import platform.darwin.NSObject
 import kotlin.math.pow
 
+private class MapState {
+    val addedAnnotations = mutableListOf<MKPointAnnotation>()
+    val addedOverlays = mutableListOf<MKOverlayProtocol>()
+}
+
 @OptIn(ExperimentalForeignApi::class)
 @Composable
 actual fun NativeMapView(
@@ -33,6 +38,7 @@ actual fun NativeMapView(
     darkMode: Boolean,
 ) {
     val delegate = remember { MapViewDelegate() }
+    val mapState = remember { MapState() }
 
     UIKitView(
         modifier = modifier,
@@ -53,15 +59,13 @@ actual fun NativeMapView(
             val region = MKCoordinateRegionMakeWithDistance(center, metersPerZoom, metersPerZoom)
             mapView.setRegion(region, animated = true)
 
-            // Clear existing annotations and overlays
-            val existingAnnotations = mapView.annotations.filterNotNull()
-            if (existingAnnotations.isNotEmpty()) {
-                mapView.removeAnnotations(existingAnnotations)
-            }
-            val existingOverlays = mapView.overlays.filterNotNull()
-            if (existingOverlays.isNotEmpty()) {
-                mapView.removeOverlays(existingOverlays)
-            }
+            // Clear previously tracked annotations
+            mapState.addedAnnotations.forEach { mapView.removeAnnotation(it) }
+            mapState.addedAnnotations.clear()
+
+            // Clear previously tracked overlays
+            mapState.addedOverlays.forEach { mapView.removeOverlay(it) }
+            mapState.addedOverlays.clear()
 
             // Add markers as annotations
             markers.forEach { marker ->
@@ -70,6 +74,7 @@ actual fun NativeMapView(
                     setTitle(marker.title)
                 }
                 mapView.addAnnotation(annotation)
+                mapState.addedAnnotations.add(annotation)
             }
 
             // Add route polyline
@@ -85,7 +90,9 @@ actual fun NativeMapView(
                             count = coordinates.size.toULong(),
                         )
                         @Suppress("UNCHECKED_CAST")
-                        mapView.addOverlay(polyline as MKOverlayProtocol)
+                        val overlay = polyline as MKOverlayProtocol
+                        mapView.addOverlay(overlay)
+                        mapState.addedOverlays.add(overlay)
                     }
                 }
             }
