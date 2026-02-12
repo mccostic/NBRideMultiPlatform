@@ -42,6 +42,7 @@ kotlin {
                 implementation(project(":core:mvi"))
                 implementation(project(":feature:login"))
                 implementation(project(":feature:register"))
+                implementation(project(":feature:home"))
             }
         }
 
