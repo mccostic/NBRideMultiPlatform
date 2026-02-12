@@ -288,7 +288,7 @@ fun SelectDestinationContent(
                         .padding(horizontal = 16.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(RideColors.SurfaceWhite4)
-                        .clickable { /* TODO: map pick mode */ }
+                        .clickable { onIntent(RideIntent.NavigateTo(RideScreen.MapPicker)) }
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

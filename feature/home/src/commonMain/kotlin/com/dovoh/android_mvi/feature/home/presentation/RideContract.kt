@@ -31,6 +31,7 @@ data class RideState(
 enum class RideScreen {
     Home,
     SelectDestination,
+    MapPicker,
     RideOptions,
     Searching,
     DriverFound,
@@ -50,6 +51,7 @@ sealed interface RideIntent {
     data class UpdateProgress(val progress: Float) : RideIntent
     data object RideCompleted : RideIntent
     data class RateDriver(val stars: Int) : RideIntent
+    data class ConfirmMapPin(val lat: Double, val lng: Double, val address: String) : RideIntent
     data object CancelRide : RideIntent
     data object GoHome : RideIntent
 }

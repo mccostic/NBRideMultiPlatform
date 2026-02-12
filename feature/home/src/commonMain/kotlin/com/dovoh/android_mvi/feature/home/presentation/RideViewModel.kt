@@ -2,7 +2,7 @@ package com.dovoh.android_mvi.feature.home.presentation
 
 import com.dovoh.android_mvi.core.common.BusinessException
 import com.dovoh.android_mvi.core.mvi.MviViewModel
-import com.dovoh.android_mvi.feature.home.presentation.model.Driver
+import com.dovoh.android_mvi.feature.home.presentation.model.Place
 import kotlinx.coroutines.delay
 
 class RideViewModel : MviViewModel<RideIntent, RideState, RideEffect>(RideState()) {
@@ -60,6 +60,18 @@ class RideViewModel : MviViewModel<RideIntent, RideState, RideEffect>(RideState(
         }
 
         is RideIntent.RateDriver -> setState { copy(rating = intent.stars) }
+
+        is RideIntent.ConfirmMapPin -> {
+            val place = Place(
+                id = 99,
+                name = "Pinned Location",
+                address = intent.address,
+                icon = "\uD83D\uDCCD",
+                lat = intent.lat,
+                lng = intent.lng,
+            )
+            sendIntent(RideIntent.SetDestination(place))
+        }
 
         RideIntent.CancelRide -> setState {
             copy(
