@@ -28,6 +28,12 @@ actual fun NativeMapView(
                 } else {
                     UIUserInterfaceStyle.UIUserInterfaceStyleLight
                 }
+                // Display-only: disable all user interaction so the Canvas
+                // route overlay stays aligned with the map tiles
+                isScrollEnabled = false
+                isZoomEnabled = false
+                isRotateEnabled = false
+                isPitchEnabled = false
             }
         },
         update = { mapView ->
