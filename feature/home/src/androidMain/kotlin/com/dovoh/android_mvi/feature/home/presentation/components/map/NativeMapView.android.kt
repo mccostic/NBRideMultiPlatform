@@ -4,18 +4,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 
 private const val DARK_MAP_STYLE = """[
@@ -38,8 +33,6 @@ actual fun NativeMapView(
     cameraLat: Double,
     cameraLng: Double,
     cameraZoom: Float,
-    markers: List<MapMarker>,
-    routePoints: List<MapLatLng>?,
     darkMode: Boolean,
 ) {
     val cameraPositionState = rememberCameraPositionState {
@@ -54,11 +47,7 @@ actual fun NativeMapView(
 
     val mapProperties = remember(darkMode) {
         MapProperties(
-            mapStyleOptions = if (darkMode) {
-                MapStyleOptions(DARK_MAP_STYLE)
-            } else {
-                null
-            }
+            mapStyleOptions = if (darkMode) MapStyleOptions(DARK_MAP_STYLE) else null,
         )
     }
 
@@ -76,29 +65,5 @@ actual fun NativeMapView(
         cameraPositionState = cameraPositionState,
         properties = mapProperties,
         uiSettings = uiSettings,
-    ) {
-        markers.forEach { marker ->
-            val hue = when (marker.type) {
-                MarkerType.ORIGIN -> BitmapDescriptorFactory.HUE_CYAN
-                MarkerType.DESTINATION -> BitmapDescriptorFactory.HUE_VIOLET
-                MarkerType.CAR -> BitmapDescriptorFactory.HUE_AZURE
-                MarkerType.DRIVER -> BitmapDescriptorFactory.HUE_CYAN
-            }
-            Marker(
-                state = MarkerState(position = LatLng(marker.lat, marker.lng)),
-                title = marker.title,
-                icon = BitmapDescriptorFactory.defaultMarker(hue),
-            )
-        }
-
-        routePoints?.let { points ->
-            if (points.size >= 2) {
-                Polyline(
-                    points = points.map { LatLng(it.lat, it.lng) },
-                    color = Color(0xFF00D4FF),
-                    width = 8f,
-                )
-            }
-        }
-    }
+    )
 }
