@@ -279,10 +279,10 @@ fun MapPickerContent(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         CoordinateChip(
-                            label = "%.4f".format(cameraLat),
+                            label = formatCoord(cameraLat),
                         )
                         CoordinateChip(
-                            label = "%.4f".format(cameraLng),
+                            label = formatCoord(cameraLng),
                         )
                     }
                 }
@@ -337,6 +337,16 @@ private fun CoordinateChip(label: String) {
             fontWeight = FontWeight.Medium,
         )
     }
+}
+
+/** Format a coordinate to 4 decimal places without String.format (KMP-safe). */
+private fun formatCoord(value: Double): String {
+    val abs = if (value < 0) -value else value
+    val intPart = abs.toLong()
+    val fracPart = ((abs - intPart) * 10000 + 0.5).toLong()
+    val frac = fracPart.toString().padStart(4, '0').take(4)
+    val sign = if (value < 0) "-" else ""
+    return "$sign$intPart.$frac"
 }
 
 /** Find the nearest known place within ~200m. */
