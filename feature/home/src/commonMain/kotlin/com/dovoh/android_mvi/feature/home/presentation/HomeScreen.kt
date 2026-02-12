@@ -13,6 +13,7 @@ import com.dovoh.android_mvi.feature.home.presentation.components.InRideContent
 import com.dovoh.android_mvi.feature.home.presentation.components.RideCompleteContent
 import com.dovoh.android_mvi.feature.home.presentation.components.RideOptionsContent
 import com.dovoh.android_mvi.feature.home.presentation.components.SearchingContent
+import com.dovoh.android_mvi.feature.home.presentation.components.MapPickerContent
 import com.dovoh.android_mvi.feature.home.presentation.components.SelectDestinationContent
 
 @Composable
@@ -31,6 +32,7 @@ fun HomeScreen(
         when (screen) {
             RideScreen.Home -> HomeContent(state = state, onIntent = onIntent)
             RideScreen.SelectDestination -> SelectDestinationContent(state = state, onIntent = onIntent)
+            RideScreen.MapPicker -> MapPickerContent(state = state, onIntent = onIntent)
             RideScreen.RideOptions -> RideOptionsContent(state = state, onIntent = onIntent)
             RideScreen.Searching -> SearchingContent(state = state, onIntent = onIntent)
             RideScreen.DriverFound -> DriverFoundContent(state = state, onIntent = onIntent)
