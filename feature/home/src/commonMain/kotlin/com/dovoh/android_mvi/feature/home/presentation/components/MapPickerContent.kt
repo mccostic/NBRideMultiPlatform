@@ -6,7 +6,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,7 +36,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -46,18 +44,15 @@ import com.dovoh.android_mvi.feature.home.presentation.DefaultData
 import com.dovoh.android_mvi.feature.home.presentation.RideIntent
 import com.dovoh.android_mvi.feature.home.presentation.RideScreen
 import com.dovoh.android_mvi.feature.home.presentation.RideState
-import com.dovoh.android_mvi.feature.home.presentation.components.map.NativeMapView
+import com.dovoh.android_mvi.feature.home.presentation.components.map.InteractiveMapView
 import com.dovoh.android_mvi.feature.home.presentation.theme.RideColors
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 private const val SF_CENTER_LAT = 37.7749
 private const val SF_CENTER_LNG = -122.4194
-
-// Degrees per pixel at zoom 14 (approximate for SF latitude)
-private const val DEG_PER_PX_LAT = 0.00003
-private const val DEG_PER_PX_LNG = 0.000037
 
 @Composable
 fun MapPickerContent(
@@ -65,62 +60,70 @@ fun MapPickerContent(
     onIntent: (RideIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var cameraLat by remember { mutableStateOf(SF_CENTER_LAT) }
-    var cameraLng by remember { mutableStateOf(SF_CENTER_LNG) }
+    // Display coordinates (updated continuously by the native map callback)
+    var displayLat by remember { mutableStateOf(SF_CENTER_LAT) }
+    var displayLng by remember { mutableStateOf(SF_CENTER_LNG) }
+
+    // Command coordinates (only changed by re-center button — drives programmatic map moves)
+    var commandLat by remember { mutableStateOf(SF_CENTER_LAT) }
+    var commandLng by remember { mutableStateOf(SF_CENTER_LNG) }
+
+    // Drag detection via debounce on the camera callback
     var isDragging by remember { mutableStateOf(false) }
+    var debounceJob by remember { mutableStateOf<Job?>(null) }
+    val scope = rememberCoroutineScope()
 
     val pinScale = remember { Animatable(0f) }
-    val scope = rememberCoroutineScope()
 
     // Entry animation
     LaunchedEffect(Unit) {
-        pinScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow))
+        pinScale.animateTo(
+            1f,
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow,
+            ),
+        )
     }
 
-    // Bounce pin on drag end
+    // Bounce pin when dragging stops
     LaunchedEffect(isDragging) {
-        if (!isDragging) {
+        if (!isDragging && pinScale.value > 0f) {
             pinScale.animateTo(0.85f, tween(80))
             pinScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
         }
     }
 
-    val nearbyPlace by remember(cameraLat, cameraLng) {
-        derivedStateOf { findNearbyPlace(cameraLat, cameraLng) }
+    val nearbyPlace by remember(displayLat, displayLng) {
+        derivedStateOf { findNearbyPlace(displayLat, displayLng) }
     }
 
-    val addressText by remember(cameraLat, cameraLng, nearbyPlace) {
+    val addressText by remember(displayLat, displayLng, nearbyPlace) {
         derivedStateOf {
             nearbyPlace?.let { "Near ${it.name}" }
-                ?: generateAddress(cameraLat, cameraLng)
+                ?: generateAddress(displayLat, displayLng)
         }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        // --- Map background (pannable) ---
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDragStart = { isDragging = true },
-                        onDragEnd = { isDragging = false },
-                        onDragCancel = { isDragging = false },
-                    ) { change, dragAmount ->
-                        change.consume()
-                        cameraLat += dragAmount.y * DEG_PER_PX_LAT
-                        cameraLng -= dragAmount.x * DEG_PER_PX_LNG
-                    }
-                },
-        ) {
-            NativeMapView(
-                modifier = Modifier.fillMaxSize(),
-                cameraLat = cameraLat,
-                cameraLng = cameraLng,
-                cameraZoom = 14f,
-                darkMode = true,
-            )
-        }
+        // --- Native interactive map (owns all touch/pan/zoom gestures) ---
+        InteractiveMapView(
+            modifier = Modifier.fillMaxSize(),
+            centerLat = commandLat,
+            centerLng = commandLng,
+            zoom = 14f,
+            darkMode = true,
+            onCameraMoved = { lat, lng ->
+                displayLat = lat
+                displayLng = lng
+                isDragging = true
+                debounceJob?.cancel()
+                debounceJob = scope.launch {
+                    delay(250)
+                    isDragging = false
+                }
+            },
+        )
 
         // --- Top bar overlay ---
         Row(
@@ -163,7 +166,6 @@ fun MapPickerContent(
             modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Pin head
             Box(
                 modifier = Modifier
                     .scale(pinScale.value)
@@ -195,7 +197,7 @@ fun MapPickerContent(
                                 .background(Color.White),
                         )
                     }
-                    // Pin pointer triangle (small stem)
+                    // Pin stem
                     Box(
                         modifier = Modifier
                             .size(width = 4.dp, height = 10.dp)
@@ -216,10 +218,10 @@ fun MapPickerContent(
                 .clip(CircleShape)
                 .background(RideColors.CardBackground)
                 .clickable {
-                    scope.launch {
-                        cameraLat = SF_CENTER_LAT
-                        cameraLng = SF_CENTER_LNG
-                    }
+                    commandLat = SF_CENTER_LAT
+                    commandLng = SF_CENTER_LNG
+                    displayLat = SF_CENTER_LAT
+                    displayLng = SF_CENTER_LNG
                 },
             contentAlignment = Alignment.Center,
         ) {
@@ -278,12 +280,8 @@ fun MapPickerContent(
                         modifier = Modifier.padding(top = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        CoordinateChip(
-                            label = formatCoord(cameraLat),
-                        )
-                        CoordinateChip(
-                            label = formatCoord(cameraLng),
-                        )
+                        CoordinateChip(label = formatCoord(displayLat))
+                        CoordinateChip(label = formatCoord(displayLng))
                     }
                 }
             }
@@ -301,8 +299,8 @@ fun MapPickerContent(
                     .clickable {
                         onIntent(
                             RideIntent.ConfirmMapPin(
-                                lat = cameraLat,
-                                lng = cameraLng,
+                                lat = displayLat,
+                                lng = displayLng,
                                 address = addressText,
                             ),
                         )
@@ -354,8 +352,7 @@ private fun findNearbyPlace(lat: Double, lng: Double): com.dovoh.android_mvi.fea
     val allPlaces = DefaultData.savedPlaces + DefaultData.suggestedPlaces
     val threshold = 0.002 // ~200m in degrees
     return allPlaces.minByOrNull { p ->
-        val d = sqrt((p.lat - lat) * (p.lat - lat) + (p.lng - lng) * (p.lng - lng))
-        d
+        sqrt((p.lat - lat) * (p.lat - lat) + (p.lng - lng) * (p.lng - lng))
     }?.takeIf { p ->
         sqrt((p.lat - lat) * (p.lat - lat) + (p.lng - lng) * (p.lng - lng)) < threshold
     }
@@ -369,7 +366,6 @@ private fun generateAddress(lat: Double, lng: Double): String {
         "Fillmore St", "Polk St", "Van Ness Ave", "Columbus Ave",
         "Broadway", "Montgomery St", "Kearny St", "Stockton St",
     )
-    // Deterministic-ish street pick from coordinates
     val index = ((lat * 10000 + lng * 10000).toInt().and(0x7FFFFFFF)) % streets.size
     val number = (((lat - 37.7) * 40000).toInt().and(0x7FFF)) + 100
     return "$number ${streets[index]}, San Francisco"
