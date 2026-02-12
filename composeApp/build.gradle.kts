@@ -76,7 +76,7 @@ android {
         // Google Maps API key - set via gradle.properties or environment variable
         manifestPlaceholders["MAPS_API_KEY"] = findProperty("MAPS_API_KEY")?.toString()
             ?: System.getenv("MAPS_API_KEY")
-            ?: "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+            ?: "AIzaSyCTL6eLkdNstgd2ZoyvUcC70uIgSUtm92k"
 
         val versionNameBase = (project.findProperty("VERSION_NAME_BASE") as String?) ?: "1.0.0.0"
 
