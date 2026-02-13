@@ -60,8 +60,8 @@ actual fun NativeMapView(
             myLocationButtonEnabled = false,
             compassEnabled = false,
             mapToolbarEnabled = false,
-            scrollGesturesEnabled = false,
-            zoomGesturesEnabled = false,
+            scrollGesturesEnabled = true,
+            zoomGesturesEnabled = true,
             rotationGesturesEnabled = false,
             tiltGesturesEnabled = false,
         )

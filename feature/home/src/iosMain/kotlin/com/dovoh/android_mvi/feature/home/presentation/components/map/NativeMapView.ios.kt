@@ -36,8 +36,8 @@ actual fun NativeMapView(
                     UIUserInterfaceStyle.UIUserInterfaceStyleLight
                 }
 
-                isScrollEnabled = false
-                isZoomEnabled = false
+                isScrollEnabled = true
+                isZoomEnabled = true
                 isRotateEnabled = false
                 isPitchEnabled = false
 

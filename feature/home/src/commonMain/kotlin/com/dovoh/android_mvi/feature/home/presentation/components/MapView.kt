@@ -19,30 +19,13 @@ fun MapView(
     state: RideState,
     modifier: Modifier = Modifier,
 ) {
-    // Camera positioning based on state
-    val originLat = state.origin?.lat ?: SF_LAT
-    val originLng = state.origin?.lng ?: SF_LNG
-    val destLat = state.destination?.lat ?: SF_LAT
-    val destLng = state.destination?.lng ?: SF_LNG
-
-    val hasRoute = state.destination != null && state.screen in setOf(
-        RideScreen.RideOptions,
-        RideScreen.Searching,
-        RideScreen.DriverFound,
-        RideScreen.InRide,
-    )
-
-    val cameraLat = if (hasRoute) (originLat + destLat) / 2.0 else SF_LAT
-    val cameraLng = if (hasRoute) (originLng + destLng) / 2.0 else SF_LNG
-    val cameraZoom = if (hasRoute) 12.5f else DEFAULT_ZOOM
-
     Box(modifier = modifier.fillMaxSize()) {
         // Native map tiles background
         NativeMapView(
             modifier = Modifier.fillMaxSize(),
-            cameraLat = cameraLat,
-            cameraLng = cameraLng,
-            cameraZoom = cameraZoom,
+            cameraLat = SF_LAT,
+            cameraLng = SF_LNG,
+            cameraZoom = DEFAULT_ZOOM,
             darkMode = true,
         )
 
