@@ -18,19 +18,16 @@ import platform.darwin.NSObject
 import kotlin.math.abs
 import kotlin.math.pow
 
-/**
- * MKMapView delegate that reports region changes back to Compose.
- * Stored via [remember] so it is retained for the lifetime of the composable.
- */
 private class MapPickerDelegate(
     private val onRegionChanged: (lat: Double, lng: Double) -> Unit,
 ) : NSObject(), MKMapViewDelegateProtocol {
 
+    @OptIn(ExperimentalForeignApi::class)
     override fun mapViewDidChangeVisibleRegion(mapView: MKMapView) {
-        @OptIn(ExperimentalForeignApi::class)
-        mapView.centerCoordinate.useContents {
-            onRegionChanged(latitude, longitude)
-        }
+        val center = mapView.centerCoordinate
+        val lat = center.useContents { this.latitude }
+        val lng = center.useContents { this.longitude }
+        onRegionChanged(lat, lng)
     }
 }
 
@@ -46,14 +43,12 @@ actual fun InteractiveMapView(
 ) {
     val currentOnCameraMoved by rememberUpdatedState(onCameraMoved)
 
-    // Retain delegate for the composable lifetime
     val delegate = remember {
         MapPickerDelegate { lat, lng ->
             currentOnCameraMoved(lat, lng)
         }
     }
 
-    // Track the last programmatic center to avoid feedback loops
     val lastProgrammaticCenter = remember { mutableStateOf(Pair(centerLat, centerLng)) }
 
     UIKitView(
@@ -66,19 +61,15 @@ actual fun InteractiveMapView(
                     UIUserInterfaceStyle.UIUserInterfaceStyleLight
                 }
 
-                // Set initial region
                 val center = CLLocationCoordinate2DMake(centerLat, centerLng)
                 val metersPerZoom = 40_000_000.0 / 2.0.pow(zoom.toDouble())
                 val region = MKCoordinateRegionMakeWithDistance(center, metersPerZoom, metersPerZoom)
                 setRegion(region, animated = false)
 
-                // User interaction is enabled by default — native pan/zoom just works
                 this.delegate = delegate
             }
         },
-        update = { mapView ->
-            // Only programmatically move the map when centerLat/centerLng changed
-            // from the parent (e.g. re-center button), NOT from the user panning
+        update = { mapView: MKMapView ->
             val (lastLat, lastLng) = lastProgrammaticCenter.value
             if (abs(centerLat - lastLat) > 0.0001 || abs(centerLng - lastLng) > 0.0001) {
                 lastProgrammaticCenter.value = Pair(centerLat, centerLng)

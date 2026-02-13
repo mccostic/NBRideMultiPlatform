@@ -48,7 +48,7 @@ actual fun NativeMapView(
                 setRegion(region, animated = false)
             }
         },
-        update = { mapView ->
+        update = { mapView: MKMapView ->
             // Camera update (only when programmatic position changes)
             if (abs(cameraLat - lastCamera[0]) > 0.0001 ||
                 abs(cameraLng - lastCamera[1]) > 0.0001
