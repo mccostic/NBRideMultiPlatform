@@ -4,21 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import com.dovoh.android_mvi.feature.home.presentation.model.MapMarkerData
-import com.dovoh.android_mvi.feature.home.presentation.model.MapMarkerType
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
-import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 
 private const val DARK_MAP_STYLE = """[
@@ -67,8 +60,8 @@ actual fun NativeMapView(
             myLocationButtonEnabled = false,
             compassEnabled = false,
             mapToolbarEnabled = false,
-            scrollGesturesEnabled = true,
-            zoomGesturesEnabled = true,
+            scrollGesturesEnabled = false,
+            zoomGesturesEnabled = false,
             rotationGesturesEnabled = false,
             tiltGesturesEnabled = false,
         )
@@ -79,110 +72,5 @@ actual fun NativeMapView(
         cameraPositionState = cameraPositionState,
         properties = mapProperties,
         uiSettings = uiSettings,
-    ) {
-        // Route polyline
-        if (routePoints.isNotEmpty()) {
-            Polyline(
-                points = routePoints.map { LatLng(it.first, it.second) },
-                color = Color(0xFF00D4FF),
-                width = 10f,
-            )
-            // Route glow
-            Polyline(
-                points = routePoints.map { LatLng(it.first, it.second) },
-                color = Color(0x3300D4FF),
-                width = 24f,
-            )
-        }
-
-        // Markers
-        markers.forEach { marker ->
-            val position = LatLng(marker.lat, marker.lng)
-            when (marker.type) {
-                MapMarkerType.Origin -> {
-                    Circle(
-                        center = position,
-                        radius = 40.0,
-                        fillColor = Color(0x4000D4FF),
-                        strokeColor = Color(0xFF00D4FF),
-                        strokeWidth = 3f,
-                    )
-                    Circle(
-                        center = position,
-                        radius = 15.0,
-                        fillColor = Color(0xFF00D4FF),
-                        strokeColor = Color.White,
-                        strokeWidth = 2f,
-                    )
-                }
-
-                MapMarkerType.Destination -> {
-                    Circle(
-                        center = position,
-                        radius = 35.0,
-                        fillColor = Color(0x337C3AED),
-                        strokeColor = Color(0xFF7C3AED),
-                        strokeWidth = 3f,
-                    )
-                    Circle(
-                        center = position,
-                        radius = 12.0,
-                        fillColor = Color(0xFF7C3AED),
-                        strokeColor = Color.White,
-                        strokeWidth = 2f,
-                    )
-                }
-
-                MapMarkerType.YouAreHere -> {
-                    Circle(
-                        center = position,
-                        radius = 50.0,
-                        fillColor = Color(0x2000D4FF),
-                        strokeColor = Color(0x5500D4FF),
-                        strokeWidth = 2f,
-                    )
-                    Circle(
-                        center = position,
-                        radius = 15.0,
-                        fillColor = Color(0xFF00D4FF),
-                        strokeColor = Color.White,
-                        strokeWidth = 3f,
-                    )
-                }
-
-                MapMarkerType.NearbyCar -> {
-                    Marker(
-                        state = MarkerState(position = position),
-                        rotation = marker.rotation,
-                        icon = BitmapDescriptorFactory.defaultMarker(
-                            BitmapDescriptorFactory.HUE_CYAN,
-                        ),
-                        flat = true,
-                        anchor = Offset05,
-                    )
-                }
-
-                MapMarkerType.Driver -> {
-                    Circle(
-                        center = position,
-                        radius = 30.0,
-                        fillColor = Color(0x3300D4FF),
-                        strokeColor = Color(0xFF00D4FF),
-                        strokeWidth = 2f,
-                    )
-                    Marker(
-                        state = MarkerState(position = position),
-                        rotation = marker.rotation,
-                        icon = BitmapDescriptorFactory.defaultMarker(
-                            BitmapDescriptorFactory.HUE_GREEN,
-                        ),
-                        flat = true,
-                        anchor = Offset05,
-                    )
-                }
-            }
-        }
-    }
+    )
 }
-
-private val Offset05 = androidx.compose.ui.geometry.Offset(0.5f, 0.5f)
